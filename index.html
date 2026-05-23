@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FOTON-ACI MOTORS — Ownership Papers Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#F0F4F8;--white:#FFFFFF;--navy:#0F1E38;--navy2:#1A2E52;
+  --text:#0F1E38;--text2:#3A4A6A;--text3:#6A7A9A;--border:#C8D4E8;
+  --blue:#2563EB;--blue-bg:#DBEAFE;--blue-soft:#93C5FD;
+  --mint:#059669;--mint-bg:#D1FAE5;--mint-soft:#6EE7B7;
+  --lavender:#7C3AED;--lav-bg:#EDE9FE;--lav-soft:#C4B5FD;
+  --amber:#D97706;--amber-bg:#FEF3C7;--amber-soft:#FCD34D;
+  --red:#DC2626;--red-bg:#FEE2E2;--red-soft:#FCA5A5;
+  --shadow:0 2px 12px rgba(15,30,56,0.08);--shadow2:0 6px 24px rgba(15,30,56,0.14);
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-weight:500;-webkit-font-smoothing:antialiased;}
+
+/* ══ LOCK ══ */
+#lockScreen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:linear-gradient(135deg,#0F1E38,#1A3A6A,#0F1E38);display:flex;align-items:center;justify-content:center;}
+.lock-wrap{background:var(--white);border-radius:24px;padding:44px 48px;width:100%;max-width:400px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.3);}
+.lock-logos{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;}
+.ll{font-weight:800;font-size:12px;padding:6px 14px;border-radius:7px;letter-spacing:1.5px;text-transform:uppercase;}
+.ll-a{background:var(--navy);color:#fff;}
+.ll-b{background:var(--blue-bg);color:var(--blue);border:1.5px solid var(--blue-soft);}
+.lock-icon{font-size:38px;margin-bottom:14px;}
+.lock-title{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.lock-sub{font-size:12px;color:var(--text3);margin-bottom:28px;line-height:1.6;}
+.lock-err{background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);margin-bottom:12px;display:none;font-weight:600;}
+.lock-field{position:relative;margin-bottom:12px;}
+.lock-input{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:11px;padding:13px 44px 13px 16px;font-size:14px;color:var(--navy);font-family:'Inter',sans-serif;outline:none;font-weight:500;transition:all .2s;}
+.lock-input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px var(--blue-bg);}
+.lock-input::placeholder{color:var(--text3);font-weight:400;}
+.lock-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text3);font-size:15px;user-select:none;}
+.lock-eye:hover{color:var(--blue);}
+.lock-btn{width:100%;background:var(--navy);border:none;border-radius:11px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;margin-bottom:16px;transition:all .2s;font-family:'Inter',sans-serif;}
+.lock-btn:hover{background:var(--navy2);transform:translateY(-1px);box-shadow:var(--shadow2);}
+.lock-remember{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;}
+.lock-remember input{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;}
+.lock-remember label{font-size:12px;color:var(--text2);cursor:pointer;font-weight:500;}
+.lock-hint{font-size:11px;color:var(--text3);}
+.lock-att{font-size:11px;color:var(--amber);margin-top:6px;display:none;font-weight:600;}
+
+/* ══ PREFACE — Light, stylish, no sidebar ══ */
+#preface{display:none;flex-direction:column;min-height:100vh;background:var(--bg);}
+#preface.active{display:flex;}
+
+/* Preface top nav */
+.pf-topnav{display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:var(--white);border-bottom:2px solid var(--border);box-shadow:var(--shadow);flex-wrap:wrap;gap:12px;}
+.pf-brand{display:flex;align-items:center;gap:10px;}
+.pf-brand-logo{font-weight:800;font-size:12px;padding:6px 13px;border-radius:7px;letter-spacing:1.5px;text-transform:uppercase;}
+.pf-brand-logo-a{background:var(--navy);color:#fff;}
+.pf-brand-logo-b{background:var(--blue-bg);color:var(--blue);border:1.5px solid var(--blue-soft);}
+.pf-brand-sep{width:1px;height:22px;background:var(--border);}
+.pf-brand-name{font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.5px;}
+.pf-topnav-right{display:flex;align-items:center;gap:10px;}
+.pf-live{display:flex;align-items:center;gap:7px;background:var(--mint-bg);border:1.5px solid var(--mint-soft);border-radius:99px;padding:7px 14px;cursor:pointer;}
+.pf-live-dot{width:7px;height:7px;border-radius:50%;background:var(--mint);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.pf-live-txt{font-size:11px;font-weight:700;color:#065F46;}
+.pf-live-sub{font-size:10px;color:var(--mint);}
+.pf-nav-btn{font-size:12px;padding:8px 16px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;font-weight:600;transition:all .15s;font-family:'Inter',sans-serif;}
+.pf-nav-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg);}
+.pf-nav-btn.prim{background:var(--navy);border-color:var(--navy);color:#fff;}
+.pf-nav-btn.prim:hover{background:var(--navy2);}
+
+/* Preface body */
+.pf-body{padding:32px 48px;flex:1;}
+
+/* Hero strip */
+.pf-hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);border-radius:20px;padding:36px 40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;margin-bottom:24px;box-shadow:var(--shadow2);}
+.pf-hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border-radius:99px;padding:4px 12px;font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;}
+.pf-hero-title{font-size:28px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.8px;margin-bottom:8px;}
+.pf-hero-title span{color:#93C5FD;}
+.pf-hero-sub{font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:20px;font-weight:400;max-width:480px;}
+.pf-hero-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.pf-hero-btn{font-size:12px;padding:10px 20px;border-radius:9px;font-weight:700;cursor:pointer;transition:all .15s;border:none;font-family:'Inter',sans-serif;}
+.pf-hero-btn-p{background:#fff;color:var(--navy);}
+.pf-hero-btn-p:hover{background:#F0F4F8;}
+.pf-hero-btn-s{background:rgba(255,255,255,0.12);color:#fff;border:1.5px solid rgba(255,255,255,0.2);}
+.pf-hero-btn-s:hover{background:rgba(255,255,255,0.2);}
+.pf-hero-stats{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+.pf-hero-stat{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 20px;text-align:center;min-width:110px;}
+.pf-hero-stat-val{font-size:28px;font-weight:800;color:#fff;line-height:1;}
+.pf-hero-stat-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.8px;margin-top:3px;}
+
+/* KPI row */
+.pf-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.pf-kpi{background:var(--white);border-radius:var(--radius);padding:18px 20px;border:2px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.pf-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.pf-kpi.c-blue::before{background:linear-gradient(90deg,#2563EB,#60A5FA);}
+.pf-kpi.c-mint::before{background:linear-gradient(90deg,#059669,#34C4A0);}
+.pf-kpi.c-amber::before{background:linear-gradient(90deg,#D97706,#FCD34D);}
+.pf-kpi.c-red::before{background:linear-gradient(90deg,#DC2626,#FCA5A5);}
+.pf-kpi-icon{font-size:20px;margin-bottom:10px;}
+.pf-kpi-val{font-size:30px;font-weight:800;color:var(--navy);line-height:1;margin-bottom:4px;}
+.pf-kpi-lbl{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;}
+.pf-kpi-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+
+/* Mid grid */
+.pf-mid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.pf-card{background:var(--white);border-radius:var(--radius);padding:22px;border:2px solid var(--border);box-shadow:var(--shadow);}
+.pf-card-title{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+.pf-card-sub{font-size:11px;color:var(--text3);margin-bottom:16px;font-weight:500;}
+
+/* Search card */
+.pf-srch-box{display:flex;align-items:center;gap:10px;background:var(--blue-bg);border:2px solid var(--blue-soft);border-radius:11px;padding:11px 15px;margin-bottom:12px;transition:all .2s;}
+.pf-srch-box:focus-within{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px var(--blue-bg);}
+.pf-srch-box input{background:transparent;border:none;outline:none;font-family:'Inter',sans-serif;font-size:13px;color:var(--navy);flex:1;font-weight:500;}
+.pf-srch-box input::placeholder{color:var(--text3);}
+.pf-srch-icon{color:var(--blue);font-size:15px;flex-shrink:0;}
+.pf-srch-results{max-height:240px;overflow-y:auto;border:2px solid var(--border);border-radius:10px;background:var(--white);}
+.pf-srch-item{padding:11px 14px;border-bottom:1px solid var(--bg);cursor:pointer;transition:background .1s;}
+.pf-srch-item:last-child{border-bottom:none;}
+.pf-srch-item:hover{background:var(--blue-bg);}
+.pf-srch-name{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.pf-srch-meta{font-size:10px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap;font-weight:500;}
+.pf-srch-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;margin-left:5px;}
+.pf-srch-hint{font-size:11px;color:var(--text3);padding:6px 0;font-weight:500;}
+.pf-srch-nores{text-align:center;padding:14px;font-size:12px;color:var(--text3);}
+
+/* Bar chart */
+.pf-bar-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;}
+.pf-bar-total{font-size:26px;font-weight:800;color:var(--navy);}
+.pf-bar-unit{font-size:11px;color:var(--text3);margin-left:4px;}
+.pf-bar-chart{display:flex;gap:8px;align-items:flex-end;height:80px;}
+.pf-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.pf-bar-wrap{width:100%;background:var(--bg);border-radius:5px;overflow:hidden;display:flex;align-items:flex-end;height:56px;}
+.pf-bar-fill{width:100%;border-radius:5px 5px 0 0;transition:height .5s ease;}
+.pf-bar-m{font-size:9px;color:var(--text3);font-weight:700;}
+.pf-bar-v{font-size:9px;color:var(--navy);font-weight:800;}
+
+/* Pie chart */
+.pf-pie-wrap{display:flex;justify-content:center;margin-bottom:14px;}
+.pf-legend{display:flex;flex-direction:column;gap:8px;}
+.pf-leg{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);font-weight:600;}
+.pf-leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.pf-leg-pct{margin-left:auto;font-weight:800;color:var(--navy);}
+
+/* Preface footer */
+.pf-footer{background:var(--white);border-top:2px solid var(--border);padding:14px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.pf-footer-info{display:flex;gap:20px;}
+.pf-fi{font-size:12px;color:var(--text3);font-weight:500;}
+.pf-fi span{color:var(--navy);font-weight:700;}
+.pf-proceed{background:var(--navy);border:none;border-radius:10px;padding:11px 26px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.pf-proceed:hover{background:var(--navy2);transform:translateY(-1px);}
+
+/* ══ DASHBOARD ══ */
+#dashboard{display:none;min-height:100vh;background:var(--bg);}
+#dashboard.active{display:flex;}
+.sidebar{width:230px;min-height:100vh;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sb-brand{padding:22px 18px 14px;}
+.sb-logo-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.sb-logo{font-weight:800;font-size:11px;padding:4px 9px;border-radius:6px;letter-spacing:1.2px;text-transform:uppercase;}
+.sb-logo-a{background:rgba(255,255,255,0.9);color:var(--navy);}
+.sb-logo-b{background:rgba(37,99,235,0.3);color:#93C5FD;}
+.sb-title{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;}
+.sb-divider{height:1px;background:rgba(255,255,255,0.08);margin:0 18px;}
+.sb-nav{padding:10px;flex:1;}
+.sb-lbl{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;padding:0 8px;margin-bottom:5px;margin-top:12px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;margin-bottom:2px;color:rgba(255,255,255,0.55);font-size:12px;font-weight:600;}
+.sb-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+.sb-item.active{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,0.4);}
+.sb-icon{font-size:14px;width:18px;text-align:center;}
+.sb-foot{padding:10px 14px 18px;}
+.sb-user{display:flex;align-items:center;gap:9px;padding:10px;background:rgba(255,255,255,0.06);border-radius:9px;}
+.sb-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:11px;font-weight:700;color:#fff;}
+.sb-urole{font-size:9px;color:rgba(255,255,255,0.35);}
+
+.main{flex:1;overflow-x:hidden;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:var(--white);border-bottom:2px solid var(--border);flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.topbar-title{font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-.4px;}
+.topbar-sub{font-size:11px;color:var(--text2);font-weight:600;margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sync-chip{display:flex;align-items:center;gap:6px;background:var(--mint-bg);border:1px solid var(--mint-soft);border-radius:99px;padding:6px 12px;font-size:11px;font-weight:700;color:#065F46;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:pulse 2s infinite;}
+.tbtn{font-size:11px;padding:7px 13px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all .15s;white-space:nowrap;}
+.tbtn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg);}
+.tbtn.g{background:var(--mint-bg);color:#065F46;border-color:var(--mint-soft);}
+.tbtn.a{background:var(--amber-bg);color:#92400E;border-color:var(--amber-soft);}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:14px 20px 0;}
+.kpi-card{background:var(--white);border-radius:var(--radius);padding:15px;border:2px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kc-blue::before{background:linear-gradient(90deg,#2563EB,#60A5FA);}
+.kc-mint::before{background:linear-gradient(90deg,#059669,#34C4A0);}
+.kc-green::before{background:linear-gradient(90deg,#065F46,#059669);}
+.kc-amber::before{background:linear-gradient(90deg,#D97706,#FCD34D);}
+.kc-red::before{background:linear-gradient(90deg,#DC2626,#FCA5A5);}
+.kpi-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px;}
+.kc-blue .kpi-icon{background:var(--blue-bg);}
+.kc-mint .kpi-icon{background:var(--mint-bg);}
+.kc-green .kpi-icon{background:#D1FAE5;}
+.kc-amber .kpi-icon{background:var(--amber-bg);}
+.kc-red .kpi-icon{background:var(--red-bg);}
+.kpi-val{font-size:28px;font-weight:800;color:var(--navy);line-height:1;letter-spacing:-.8px;margin-bottom:3px;}
+.kpi-lbl{font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;}
+.kpi-sub{font-size:9px;color:var(--text3);margin-top:2px;}
+
+/* Dashboard search with dropdown */
+.db-filter-row{display:flex;gap:8px;padding:14px 20px 0;flex-wrap:wrap;align-items:center;}
+.db-search-wrap{flex:1;min-width:220px;position:relative;}
+.db-srch-in{width:100%;background:var(--white);border:2px solid var(--blue-soft);border-radius:10px;padding:9px 14px 9px 38px;font-size:13px;color:var(--navy);font-family:'Inter',sans-serif;outline:none;font-weight:600;transition:all .15s;}
+.db-srch-in:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg);}
+.db-srch-in::placeholder{color:var(--text3);font-weight:400;}
+.db-srch-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--blue);font-size:14px;}
+.db-dropdown{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--white);border:2px solid var(--border);border-radius:11px;box-shadow:var(--shadow2);z-index:100;max-height:280px;overflow-y:auto;display:none;}
+.db-dd-item{padding:10px 14px;border-bottom:1px solid var(--bg);cursor:pointer;transition:background .1s;}
+.db-dd-item:last-child{border-bottom:none;}
+.db-dd-item:hover{background:var(--blue-bg);}
+.db-dd-name{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;}
+.db-dd-meta{font-size:10px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap;font-weight:500;}
+.db-dd-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;margin-left:5px;}
+.fi{background:var(--white);border:2px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--navy);font-family:'Inter',sans-serif;outline:none;font-weight:600;transition:all .15s;}
+.fi:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg);}
+select.fi option{background:#fff;}
+.clr-btn{background:var(--red-bg);border:2px solid var(--red-soft);border-radius:9px;padding:8px 12px;font-size:11px;color:var(--red);cursor:pointer;font-weight:700;font-family:'Inter',sans-serif;}
+.clr-btn:hover{background:var(--red-soft);}
+.err-bar{background:var(--red-bg);border:1px solid var(--red-soft);border-radius:9px;padding:10px 16px;font-size:12px;color:var(--red);margin:10px 20px 0;font-weight:600;}
+
+.tbl-section{margin:12px 20px 0;border:2px solid var(--border);border-radius:var(--radius);background:var(--white);box-shadow:var(--shadow);overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+thead th{background:#E8EEF8;padding:10px 9px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--blue);background:var(--blue-bg);}
+tbody tr{border-bottom:1px solid var(--bg);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--blue-bg);}
+tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:12px;}
+.row-sent{border-left:3px solid var(--mint);}
+.row-pending{border-left:3px solid var(--amber);}
+.row-issue{border-left:3px solid var(--red);}
+.row-delivered{border-left:3px solid var(--blue);}
+.bdg{display:inline-block;font-size:10px;padding:3px 9px;border-radius:99px;font-weight:700;border:1.5px solid transparent;}
+.b-sent{background:var(--mint-bg);color:#065F46;border-color:var(--mint-soft);}
+.b-pending{background:var(--amber-bg);color:#92400E;border-color:var(--amber-soft);}
+.b-issue{background:var(--red-bg);color:#991B1B;border-color:var(--red-soft);}
+.b-delivered{background:var(--blue-bg);color:#1E40AF;border-color:var(--blue-soft);}
+.b-name{background:var(--lav-bg);color:#5B21B6;border-color:var(--lav-soft);}
+.b-other{background:var(--bg);color:var(--text2);border-color:var(--border);}
+.edit-btn{font-size:10px;padding:3px 9px;border-radius:6px;border:1.5px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;font-weight:700;transition:all .15s;}
+.edit-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-bg);}
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px;}
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 18px;flex-wrap:wrap;gap:8px;}
+.pager-info{font-size:11px;color:var(--text2);font-weight:700;}
+.pager-btns{display:flex;gap:6px;}
+.pg-btn{font-size:11px;padding:7px 14px;border-radius:8px;border:2px solid var(--border);background:var(--white);color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;transition:all .15s;}
+.pg-btn:disabled{opacity:.35;cursor:default;}
+.pg-btn:hover:not(:disabled){background:var(--blue-bg);border-color:var(--blue-soft);color:var(--blue);}
+
+/* ══ RECORD POPUP ══ */
+.ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,30,56,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;backdrop-filter:blur(5px);}
+.rec-box{background:var(--white);border-radius:20px;width:100%;max-width:580px;box-shadow:0 30px 80px rgba(0,0,0,0.2);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;}
+.rec-head{background:var(--navy);padding:17px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.rec-head-title{font-size:14px;font-weight:800;color:#fff;}
+.rec-close{background:rgba(255,255,255,0.15);border:none;border-radius:7px;padding:5px 11px;color:#fff;font-size:16px;cursor:pointer;font-weight:700;}
+.rec-close:hover{background:rgba(255,255,255,0.25);}
+.rec-body{padding:20px;overflow-y:auto;flex:1;}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.rec-field{display:flex;flex-direction:column;gap:3px;}
+.rec-field.full{grid-column:1/-1;}
+.rec-label{font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.rec-value{font-size:13px;font-weight:700;color:var(--navy);background:var(--bg);border:2px solid var(--border);border-radius:8px;padding:8px 12px;}
+.rec-foot{padding:14px 22px;border-top:2px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.rec-btn{font-size:12px;padding:9px 18px;border-radius:9px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.rec-btn-close{background:var(--bg);border:2px solid var(--border);color:var(--text2);}
+.rec-btn-close:hover{background:var(--border);}
+.rec-btn-copy{background:var(--blue-bg);border:2px solid var(--blue-soft);color:var(--blue);}
+.rec-btn-copy:hover{background:var(--blue-soft);}
+.rec-btn-print{background:var(--amber-bg);border:2px solid var(--amber-soft);color:#92400E;}
+.rec-btn-print:hover{background:var(--amber-soft);}
+
+/* EDIT MODAL */
+.edit-ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,30,56,0.4);display:flex;align-items:center;justify-content:center;z-index:9998;padding:16px;backdrop-filter:blur(4px);}
+.edit-box{background:var(--white);border-radius:18px;padding:24px;width:100%;max-width:500px;box-shadow:0 30px 80px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;}
+.edit-title{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:16px;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.ff{display:flex;flex-direction:column;gap:4px;}
+.ff label{font-size:9px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;}
+.ff input,.ff select{font-size:12px;padding:8px 11px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--navy);font-family:'Inter',sans-serif;outline:none;font-weight:500;}
+.ff input:focus,.ff select:focus{border-color:var(--blue);background:var(--white);}
+.ff.full{grid-column:1/-1;}
+.macts{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.m-save{background:var(--navy);border:none;border-radius:9px;padding:9px 20px;font-size:12px;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;}
+.m-save:hover{background:var(--navy2);}
+.m-cancel{background:var(--bg);border:2px solid var(--border);border-radius:9px;padding:9px 20px;font-size:12px;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;}
+.m-cancel:hover{background:var(--border);}
+
+/* MOBILE — Field Officer Optimized */
+@media(max-width:768px){
+  .sidebar{display:none!important;}
+  .pf-body{padding:14px;}
+  .pf-topnav{padding:12px 16px;flex-wrap:wrap;gap:8px;}
+  .pf-brand-name{display:none;}
+  .pf-footer{padding:12px 16px;}
+  .pf-proceed{width:100%;padding:14px;font-size:14px;}
+  .pf-hero{grid-template-columns:1fr;padding:20px;gap:16px;}
+  .pf-hero-title{font-size:22px;}
+  .pf-hero-sub{font-size:12px;}
+  .pf-hero-stats{flex-direction:row;gap:8px;}
+  .pf-hero-stat{min-width:90px;padding:10px 12px;}
+  .pf-hero-stat-val{font-size:24px;}
+  .pf-kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .pf-kpi{padding:14px;}
+  .pf-kpi-val{font-size:26px;}
+  .pf-mid{grid-template-columns:1fr;}
+  .pf-card{padding:16px;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);padding:10px 12px 0;gap:8px;}
+  .kpi-card{padding:14px;}
+  .kpi-val{font-size:26px;}
+  .db-filter-row{padding:10px 12px 0;gap:6px;flex-wrap:wrap;}
+  .db-search-wrap{width:100%;min-width:100%;}
+  .db-srch-in{font-size:16px;padding:13px 14px 13px 40px;}
+  .fi{font-size:13px;padding:10px 11px;width:100%;}
+  .tbl-section{margin:10px 12px 0;font-size:11px;}
+  thead th{padding:8px 7px;font-size:9px;}
+  tbody td{padding:9px 7px;font-size:11px;}
+  .topbar{padding:12px 14px;}
+  .topbar-title{font-size:15px;}
+  .topbar-right .tbtn{display:none;}
+  .topbar-right .sync-chip{display:flex;}
+  .pager{padding:10px 12px 80px;}
+  .rec-grid{grid-template-columns:1fr;}
+  .rec-body{padding:14px;}
+  .rec-foot{flex-wrap:wrap;gap:8px;}
+  .rec-btn{flex:1;min-width:120px;text-align:center;padding:13px;}
+  .fgrid{grid-template-columns:1fr;}
+  .edit-ov .edit-box{padding:18px;}
+  body{padding-bottom:72px;}
+  /* Lock screen mobile */
+  .lock-wrap{padding:28px 20px;max-width:100%;border-radius:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center;}
+  .lock-input{font-size:16px;padding:15px 44px 15px 16px;}
+  .lock-btn{font-size:16px;padding:16px;}
+}
+/* Bottom nav */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--navy);border-top:1px solid rgba(255,255,255,0.1);z-index:200;padding:6px 0 calc(6px + env(safe-area-inset-bottom));}
+.mob-nav-items{display:flex;justify-content:space-around;}
+.mob-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 12px;border-radius:8px;min-width:56px;}
+.mob-item:active{background:rgba(255,255,255,0.1);}
+.mob-icon{font-size:20px;}
+.mob-lbl{font-size:9px;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.mob-item.active .mob-lbl{color:#93C5FD;}
+@media(max-width:768px){.mob-nav{display:block!important;}}
+@media(min-width:769px){.mob-nav{display:none!important;}}
+
+/* Requisition panel mobile friendly */
+.req-panel{padding:4px;}
+.req-field-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+@media(max-width:500px){.req-field-group{grid-template-columns:1fr;}}
+.req-label{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px;}
+.req-input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;color:var(--navy);background:var(--bg);outline:none;transition:all .2s;font-weight:500;}
+.req-input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px var(--blue-bg);}
+.req-input::placeholder{color:var(--text3);font-weight:400;}
+.req-input-readonly{background:#F8FAFC;color:var(--text2);}
+.req-status-box{border-radius:12px;padding:14px 16px;margin-bottom:16px;font-weight:600;font-size:13px;display:none;}
+.req-status-ok{background:var(--mint-bg);border:2px solid var(--mint-soft);color:#065F46;}
+.req-status-warn{background:var(--amber-bg);border:2px solid var(--amber-soft);color:#92400E;}
+.req-status-err{background:var(--red-bg);border:2px solid var(--red-soft);color:#991B1B;}
+.req-submit-btn{width:100%;background:var(--navy);border:none;border-radius:12px;padding:15px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;margin-top:4px;}
+.req-submit-btn:hover{background:var(--navy2);}
+.req-submit-btn:disabled{background:var(--text3);cursor:not-allowed;}
+.req-divider{border:none;border-top:2px solid var(--border);margin:20px 0;}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lockScreen">
+  <div class="lock-wrap">
+    <div class="lock-logos">
+      <div class="ll ll-a">FOTON</div>
+      <div class="ll ll-b">ACI MOTORS</div>
+    </div>
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title">Authorized Access Only</div>
+    <div class="lock-sub">Enter your password to access the<br>Ownership Papers Database</div>
+    <div class="lock-err" id="lockErr"></div>
+    <div class="lock-field">
+      <input class="lock-input" type="password" id="lockInput" placeholder="Enter your password" onkeydown="if(event.key==='Enter')checkPw()" autocomplete="off"/>
+      <span class="lock-eye" id="lockEye" onclick="toggleEye()">👁</span>
+    </div>
+    <button class="lock-btn" onclick="checkPw()">Unlock Dashboard →</button>
+    <div class="lock-remember">
+      <input type="checkbox" id="rememberMe"/>
+      <label for="rememberMe">Save password on this device</label>
+    </div>
+    <div class="lock-hint">Contact your administrator if you forgot the password.</div>
+    <div class="lock-att" id="lockAtt"></div>
+  </div>
+</div>
+
+<!-- PREFACE — Light, stylish, no sidebar -->
+<div id="preface">
+  <div class="pf-topnav">
+    <div class="pf-brand">
+      <div class="pf-brand-logo pf-brand-logo-a">FOTON</div>
+      <div class="pf-brand-sep"></div>
+      <div class="pf-brand-logo pf-brand-logo-b">ACI MOTORS</div>
+      <div class="pf-brand-sep"></div>
+      <div class="pf-brand-name">Ownership Papers Database</div>
+    </div>
+    <div class="pf-topnav-right">
+      <div class="pf-live" onclick="loadPreface()">
+        <div class="pf-live-dot" id="pfDot"></div>
+        <div><div class="pf-live-txt">LIVE</div><div class="pf-live-sub" id="pfSync">Connecting...</div></div>
+      </div>
+      <button class="pf-nav-btn" onclick="logout()">🔒 Logout</button>
+      <button class="pf-nav-btn prim" onclick="goToDashboard()">Full Dashboard →</button>
+    </div>
+  </div>
+
+  <div class="pf-body">
+    <!-- Hero strip -->
+    <div class="pf-hero">
+      <div>
+        <div class="pf-hero-tag">🚗 Vehicle Documentation System</div>
+        <div class="pf-hero-title">FOTON-ACI Motors<br><span>Ownership Papers</span> Database</div>
+        <div class="pf-hero-sub">Manage, track and process vehicle ownership papers. Search records instantly, monitor delivery status, and access all customer data from one place.</div>
+        <div class="pf-hero-btns">
+          <button class="pf-hero-btn pf-hero-btn-p" onclick="goToDashboard()">📊 Open Full Dashboard</button>
+          <button class="pf-hero-btn pf-hero-btn-s" onclick="loadPreface()">↻ Refresh Data</button>
+        </div>
+        <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.5);">Last sync: <span id="pfLastSync" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span> &nbsp;|&nbsp; Records: <span id="pfRec" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span></div>
+      </div>
+      <div class="pf-hero-stats">
+        <div class="pf-hero-stat"><div class="pf-hero-stat-val" id="pkT">—</div><div class="pf-hero-stat-lbl">Total Records</div></div>
+        <div class="pf-hero-stat"><div class="pf-hero-stat-val" id="pkD">—</div><div class="pf-hero-stat-lbl">Sent/Delivered</div></div>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="pf-kpi-row">
+      <div class="pf-kpi c-blue"><div class="pf-kpi-icon">📋</div><div class="pf-kpi-val" id="pkT2">—</div><div class="pf-kpi-lbl">Total Records</div><div class="pf-kpi-sub">All entries</div></div>
+      <div class="pf-kpi c-mint"><div class="pf-kpi-icon">✅</div><div class="pf-kpi-val" id="pkD2">—</div><div class="pf-kpi-lbl">Sent / Delivered</div><div class="pf-kpi-sub">Dispatched</div></div>
+      <div class="pf-kpi c-amber"><div class="pf-kpi-icon">✏️</div><div class="pf-kpi-val" id="pkN">—</div><div class="pf-kpi-lbl">Name Change</div><div class="pf-kpi-sub">Exception</div></div>
+      <div class="pf-kpi c-red"><div class="pf-kpi-icon">🔄</div><div class="pf-kpi-val" id="pkR">—</div><div class="pf-kpi-lbl">Resent / Re-Issue</div><div class="pf-kpi-sub">Flagged</div></div>
+    </div>
+
+    <!-- Mid -->
+    <div class="pf-mid" style="margin-top:20px;">
+      <!-- Search card -->
+      <div class="pf-card">
+        <div class="pf-card-title">🔍 Quick Search</div>
+        <div class="pf-card-sub">Type a code, name or reg. no — click result to go to Dashboard</div>
+        <div class="pf-srch-box">
+          <span class="pf-srch-icon">⌕</span>
+          <input id="pfSearchInput" placeholder="Code, name, registration, engine..." oninput="pfDoSearch()" onkeydown="if(event.key==='Escape'){this.value='';pfDoSearch();}" autocomplete="off"/>
+        </div>
+        <div id="pfResults" class="pf-srch-results" style="display:none;"></div>
+        <div id="pfNoRes" class="pf-srch-nores" style="display:none;">No records found.</div>
+        <div id="pfHint" class="pf-srch-hint">💡 Click any result → opens Dashboard and shows that record</div>
+      </div>
+
+      <!-- Bar chart -->
+      <div class="pf-card">
+        <div class="pf-bar-header">
+          <div>
+            <div class="pf-card-title">📅 Month-wise Sent History</div>
+            <div class="pf-card-sub">Courier dispatched per month</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="pf-bar-total" id="barTot">—</div>
+            <div class="pf-bar-unit">total units</div>
+          </div>
+        </div>
+        <div class="pf-bar-chart" id="barChart"><div style="font-size:12px;color:var(--text3);">Loading...</div></div>
+      </div>
+
+      <!-- Pie chart -->
+      <div class="pf-card">
+        <div class="pf-card-title">🗺️ Showroom Distribution</div>
+        <div class="pf-card-sub">Records by region</div>
+        <div class="pf-pie-wrap">
+          <svg width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="65" cy="65" r="48" fill="none" stroke="var(--bg)" stroke-width="18"/>
+            <circle cx="65" cy="65" r="48" fill="none" stroke="#2563EB" stroke-width="18" stroke-dasharray="120 302" stroke-dashoffset="0"/>
+            <circle cx="65" cy="65" r="48" fill="none" stroke="#059669" stroke-width="18" stroke-dasharray="90 302" stroke-dashoffset="-120"/>
+            <circle cx="65" cy="65" r="48" fill="none" stroke="#D97706" stroke-width="18" stroke-dasharray="60 302" stroke-dashoffset="-210"/>
+            <circle cx="65" cy="65" r="48" fill="none" stroke="#DC2626" stroke-width="18" stroke-dasharray="32 302" stroke-dashoffset="-270"/>
+            <circle cx="65" cy="65" r="30" fill="white"/>
+            <text x="65" y="61" text-anchor="middle" font-size="10" fill="var(--text3)" font-family="Inter,sans-serif">Total</text>
+            <text x="65" y="75" text-anchor="middle" font-size="17" fill="var(--navy)" font-weight="800" font-family="Inter,sans-serif" id="pieN">—</text>
+          </svg>
+        </div>
+        <div class="pf-legend">
+          <div class="pf-leg"><div class="pf-leg-dot" style="background:#2563EB"></div>Dhaka<div class="pf-leg-pct">40%</div></div>
+          <div class="pf-leg"><div class="pf-leg-dot" style="background:#059669"></div>Chittagong<div class="pf-leg-pct">30%</div></div>
+          <div class="pf-leg"><div class="pf-leg-dot" style="background:#D97706"></div>Sylhet<div class="pf-leg-pct">20%</div></div>
+          <div class="pf-leg"><div class="pf-leg-dot" style="background:#DC2626"></div>Khulna<div class="pf-leg-pct">10%</div></div>
+        </div>
+      </div>
+
+      <!-- Full access card -->
+      <div class="pf-card" style="background:linear-gradient(135deg,var(--navy),var(--navy2));border-color:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;" onclick="goToDashboard()">
+        <div style="font-size:36px;margin-bottom:12px;">📁</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">Full Data Access</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);">View, search, edit &amp; export<br>all records</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pf-footer">
+    <div class="pf-footer-info">
+      <div class="pf-fi">Status: <span style="color:var(--mint);">● Live</span></div>
+      <div class="pf-fi">Last Sync: <span id="pfLastSync2">—</span></div>
+      <div class="pf-fi">Records: <span id="pfRec2">—</span></div>
+    </div>
+    <button class="pf-proceed" onclick="goToDashboard()">Proceed to Dashboard →</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-logo-row">
+        <div class="sb-logo sb-logo-a">FOTON</div>
+        <div class="sb-logo sb-logo-b">ACI</div>
+      </div>
+      <div class="sb-title">Ownership Papers DB</div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-nav">
+      <div class="sb-lbl">Navigation</div>
+      <div class="sb-item active"><span class="sb-icon">📊</span>Dashboard</div>
+      <div class="sb-item" onclick="goToPreface()"><span class="sb-icon">🏠</span>Preface</div>
+      <div class="sb-lbl">Requisition</div>
+      <div class="sb-item" id="reqSideBtn" onclick="openRequisitionPanel()"><span class="sb-icon">📋</span>Requisition Panel</div>
+      <div class="sb-lbl">Actions</div>
+      <div class="sb-item" onclick="loadData()"><span class="sb-icon">↻</span>Refresh</div>
+      <div class="sb-item" onclick="exportExcel()"><span class="sb-icon">📥</span>Export Excel</div>
+      <div class="sb-item" onclick="exportPDF()"><span class="sb-icon">📄</span>Export PDF</div>
+      <div class="sb-item" onclick="printView()"><span class="sb-icon">🖨️</span>Print View</div>
+      <div class="sb-lbl">Account</div>
+      <div class="sb-item" onclick="logout()" style="color:#F09098;"><span class="sb-icon">🔒</span>Logout</div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-avatar">A</div>
+        <div><div class="sb-uname">ACI Motors</div><div class="sb-urole">Administrator</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Ownership Papers Database</div>
+        <div class="topbar-sub">FOTON-ACI Motors — Vehicle Documentation System</div>
+      </div>
+      <div class="topbar-right">
+        <div class="sync-chip"><div class="sync-dot" id="dbDot"></div><span id="dbSync">Syncing...</span></div>
+        <button class="tbtn g" onclick="exportExcel()">⬇ Excel</button>
+        <button class="tbtn a" onclick="exportPDF()">📄 PDF</button>
+        <button class="tbtn" onclick="printView()">🖨 Print</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card kc-blue"><div class="kpi-icon">📋</div><div class="kpi-val" id="dkT">—</div><div class="kpi-lbl">Total Records</div><div class="kpi-sub">All entries</div></div>
+      <div class="kpi-card kc-mint"><div class="kpi-icon">✅</div><div class="kpi-val" id="dkD">—</div><div class="kpi-lbl">Sent / Delivered</div><div class="kpi-sub">Dispatched</div></div>
+      <div class="kpi-card kc-green"><div class="kpi-icon">✏️</div><div class="kpi-val" id="dkA">—</div><div class="kpi-lbl">Name Change</div><div class="kpi-sub">Exception</div></div>
+      <div class="kpi-card kc-amber"><div class="kpi-icon">⏳</div><div class="kpi-val" id="dkP">—</div><div class="kpi-lbl">Pending</div><div class="kpi-sub">Awaiting</div></div>
+      <div class="kpi-card kc-red"><div class="kpi-icon">🔄</div><div class="kpi-val" id="dkI">—</div><div class="kpi-lbl">Resent/Re-Issue</div><div class="kpi-sub">Flagged</div></div>
+    </div>
+
+    <div class="db-filter-row">
+      <div class="db-search-wrap">
+        <span class="db-srch-icon">🔍</span>
+        <input class="db-srch-in" id="srch" placeholder="Search name, code, reg. no, engine..." oninput="onDbSearch()" autocomplete="off"/>
+        <div class="db-dropdown" id="dbDrop"></div>
+      </div>
+      <select class="fi" id="fSt" onchange="goFilter()">
+        <option value="">All Statuses</option>
+        <option value="sent">Sent</option>
+        <option value="delivered">Delivered</option>
+        <option value="name change">Name Change</option>
+        <option value="pending">Pending</option>
+        <option value="resent">Sent Resent</option>
+        <option value="reissue">Re-Issue</option>
+      </select>
+      <select class="fi" id="fRv" onchange="goFilter()"><option value="">All Receivers</option></select>
+      <input class="fi" type="date" id="fD1" onchange="goFilter()" title="From"/>
+      <input class="fi" type="date" id="fD2" onchange="goFilter()" title="To"/>
+      <button class="clr-btn" onclick="clrF()">Clear ×</button>
+    </div>
+
+    <div id="errBar" style="display:none" class="err-bar"></div>
+
+    <div class="tbl-section">
+      <table>
+        <thead><tr>
+          <th style="width:34px" onclick="srt('SL')">SL</th>
+          <th style="width:62px" onclick="srt('Code')">Code</th>
+          <th style="width:125px" onclick="srt('Customer Name')">Customer Name</th>
+          <th style="width:100px" onclick="srt('Registration No')">Reg. No</th>
+          <th style="width:92px" onclick="srt('Engine No')">Engine No</th>
+          <th style="width:105px">Chassis Pri</th>
+          <th style="width:105px">Chassis Sec</th>
+          <th style="width:98px">Contact No</th>
+          <th style="width:80px" onclick="srt('Status')">Status</th>
+          <th style="width:95px" onclick="srt('Date of Courier')">Courier Date</th>
+          <th style="width:78px" onclick="srt('Receiver')">Receiver</th>
+          <th style="width:95px">Remark</th>
+          <th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="13" class="empty">Loading data...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <div class="pager-info" id="pgInfo">—</div>
+      <div class="pager-btns">
+        <button class="pg-btn" id="pgPrev" onclick="chgPg(-1)" disabled>← Prev</button>
+        <button class="pg-btn" id="pgNext" onclick="chgPg(1)" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom nav -->
+  <div class="mob-nav">
+    <div class="mob-nav-items">
+      <div class="mob-item" onclick="void(0)"><div class="mob-icon">📊</div><div class="mob-lbl">Dashboard</div></div>
+      <div class="mob-item" onclick="goToPreface()"><div class="mob-icon">🏠</div><div class="mob-lbl">Preface</div></div>
+      <div class="mob-item" onclick="exportExcel()"><div class="mob-icon">📥</div><div class="mob-lbl">Export</div></div>
+      <div class="mob-item" onclick="printView()"><div class="mob-icon">🖨️</div><div class="mob-lbl">Print</div></div>
+      <div class="mob-item" onclick="logout()"><div class="mob-icon">🔒</div><div class="mob-lbl">Logout</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modalArea"></div>
+
+<script>
+const SHEET='https://script.google.com/macros/s/AKfycbzyY8pQpU2xD1KW8qQY0bIfjSukgDiTkzuGQdBnnBm1PS7v29zwQdc5nKe8a621HvlR/exec';
+const KEYS=['SL','Code','Customer Name','Registration No','Engine No','Chassis No (Primary)','Chassis No (Secondary)','Customer Contact No','Status','Date of Courier','Receiver','Remark'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const BAR_C=['#2563EB','#059669','#D97706','#DC2626','#7C3AED','#0891B2','#065F46','#EA580C'];
+const PS=25;
+let all=[],fil=[],pgN=0,sCol='',sAsc=true;
+
+// JSONP with mobile-friendly retry
+function jsonpFetch(url,retries=3){
+  return new Promise((res,rej)=>{
+    let attempt=0;
+    function tryFetch(){
+      attempt++;
+      const cb='cb_'+Math.random().toString(36).slice(2)+'_'+Date.now();
+      const s=document.createElement('script');
+      s.type='text/javascript';
+      const t=setTimeout(()=>{
+        cleanup();
+        if(attempt<retries){setTimeout(tryFetch,1500);}
+        else rej(new Error('Connection failed after '+retries+' attempts. Please check your internet and try again.'));
+      },12000);
+      function cleanup(){
+        clearTimeout(t);
+        try{delete window[cb];}catch(e){}
+        try{if(s.parentNode)s.parentNode.removeChild(s);}catch(e){}
+      }
+      window[cb]=function(d){cleanup();res(d);};
+      s.onerror=function(){
+        cleanup();
+        if(attempt<retries){setTimeout(tryFetch,2000);}
+        else rej(new Error('Could not connect to Google Sheet. Please check your internet connection.'));
+      };
+      s.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&nocache='+Date.now();
+      document.head.appendChild(s);
+    }
+    tryFetch();
+  });
+}
+
+// LOAD DASHBOARD DATA
+async function loadData(){
+  setSS('Syncing...','#D97706');
+  document.getElementById('errBar').style.display='none';
+  document.getElementById('tbody').innerHTML='<tr><td colspan="13" class="empty">Loading...</td></tr>';
+  try{
+    const d=await jsonpFetch(SHEET);
+    if(!Array.isArray(d))throw new Error('Bad format');
+    all=d;buildRv();goFilter();updateKPIs();
+    const t=new Date().toLocaleTimeString();
+    setSS('Synced '+t,'#059669');
+    document.getElementById('dbSync').textContent='Synced '+t;
+  }catch(e){
+    document.getElementById('errBar').innerHTML='⚠ '+e.message+' &nbsp;<button onclick="loadData()" style="background:var(--red);border:none;border-radius:6px;padding:4px 12px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">↻ Retry Now</button>';
+    document.getElementById('errBar').style.display='block';
+    setSS('Sync failed','#DC2626');
+    document.getElementById('tbody').innerHTML='<tr><td colspan="13" class="empty">Could not load data.</td></tr>';
+  }
+}
+function setSS(t,c){const d=document.getElementById('dbDot');if(d){d.style.background=c;d.style.boxShadow='0 0 6px '+c;}document.getElementById('dbSync').textContent=t;}
+
+function buildRv(){
+  const s=document.getElementById('fRv');
+  const rv=[...new Set(all.map(r=>String(r['Receiver']||'')).filter(Boolean))].sort();
+  s.innerHTML='<option value="">All Receivers</option>'+rv.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+
+function updateKPIs(){
+  const sd=all.filter(r=>{const s=String(r['Status']||'').toLowerCase().trim();return s==='sent'||s==='delivered';}).length;
+  const nc=all.filter(r=>String(r['Status']||'').toLowerCase().includes('name change')).length;
+  const ri=all.filter(r=>{const s=String(r['Status']||'').toLowerCase();return s.includes('resent')||s.includes('reissue')||s.includes('re-issue');}).length;
+  const pe=all.filter(r=>String(r['Status']||'').toLowerCase().trim()==='pending').length;
+  document.getElementById('dkT').textContent=all.length;
+  document.getElementById('dkD').textContent=sd;
+  document.getElementById('dkA').textContent=nc;
+  document.getElementById('dkP').textContent=pe;
+  document.getElementById('dkI').textContent=ri;
+}
+
+// LOAD PREFACE DATA
+async function loadPreface(){
+  document.getElementById('pfDot').style.background='#D97706';
+  document.getElementById('pfSync').textContent='Connecting...';
+  try{
+    const d=await jsonpFetch(SHEET);
+    if(!Array.isArray(d))throw new Error('Bad format');
+    all=d;const n=d.length;
+    const sd=d.filter(r=>{const s=String(r['Status']||'').toLowerCase().trim();return s==='sent'||s==='delivered';}).length;
+    const nc=d.filter(r=>String(r['Status']||'').toLowerCase().includes('name change')).length;
+    const ri=d.filter(r=>{const s=String(r['Status']||'').toLowerCase();return s.includes('resent')||s.includes('reissue')||s.includes('re-issue');}).length;
+    // Update all elements
+    ['pkT','pkT2'].forEach(id=>document.getElementById(id).textContent=n);
+    ['pkD','pkD2'].forEach(id=>document.getElementById(id).textContent=sd);
+    document.getElementById('pkN').textContent=nc;
+    document.getElementById('pkR').textContent=ri;
+    document.getElementById('pieN').textContent=n;
+    const t=new Date().toLocaleTimeString();
+    ['pfLastSync','pfLastSync2'].forEach(id=>document.getElementById(id).textContent=t);
+    ['pfRec','pfRec2'].forEach(id=>document.getElementById(id).textContent=n+' records');
+    document.getElementById('pfSync').textContent='Synced '+t;
+    document.getElementById('pfDot').style.background='#059669';
+    // Bar chart
+    const mc={};
+    d.forEach(r=>{
+      const st=String(r['Status']||'').toLowerCase().trim();
+      if(st==='sent'||st==='delivered'||st.includes('resent')||st.includes('reissue')){
+        const dt=new Date(String(r['Date of Courier']||''));
+        if(!isNaN(dt.getTime())){const k=MONTHS[dt.getMonth()]+' '+String(dt.getFullYear()).slice(2);mc[k]=(mc[k]||0)+1;}
+      }
+    });
+    const entries=Object.entries(mc).sort((a,b)=>{
+      const pa=a[0].split(' '),pb=b[0].split(' ');
+      const ya=parseInt(pa[1]),yb=parseInt(pb[1]),ma=MONTHS.indexOf(pa[0]),mb=MONTHS.indexOf(pb[0]);
+      return ya!==yb?ya-yb:ma-mb;
+    }).slice(-8);
+    const maxV=entries.length?Math.max(...entries.map(e=>e[1])):1;
+    const gt=entries.reduce((s,e)=>s+e[1],0);
+    document.getElementById('barTot').textContent=gt||'0';
+    document.getElementById('barChart').innerHTML=entries.length?entries.map(([m,v],i)=>`
+      <div class="pf-bar-col" onclick="showMonthData('${m}')" style="cursor:pointer;" title="Click to view ${m} records">
+        <div class="pf-bar-v">${v}</div>
+        <div class="pf-bar-wrap"><div class="pf-bar-fill" style="height:${Math.round(v/maxV*100)}%;background:${BAR_C[i%BAR_C.length]};"></div></div>
+        <div class="pf-bar-m">${m}</div>
+      </div>`).join(''):'<div style="font-size:11px;color:var(--text3);">No data</div>';
+  }catch(e){
+    document.getElementById('pfSync').textContent='Error: '+e.message;
+    document.getElementById('pfDot').style.background='#DC2626';
+  }
+}
+
+// PREFACE SEARCH — click goes to dashboard, shows record, opens popup
+function pfDoSearch(){
+  const q=document.getElementById('pfSearchInput').value.trim();
+  const rb=document.getElementById('pfResults');
+  const nr=document.getElementById('pfNoRes');
+  const hint=document.getElementById('pfHint');
+  if(!q){rb.style.display='none';nr.style.display='none';hint.style.display='block';return;}
+  hint.style.display='none';
+  const sf=['SL','Code','Customer Name','Registration No','Engine No','Chassis No (Primary)','Chassis No (Secondary)','Customer Contact No','Receiver'];
+  const matches=all.filter(r=>sf.some(k=>fuzzyMatch(r[k],q))).slice(0,12);
+  if(!matches.length){rb.style.display='none';nr.style.display='block';return;}
+  nr.style.display='none';rb.style.display='block';
+  rb.innerHTML=matches.map(r=>{
+    const st=String(r['Status']||''),l=st.toLowerCase();
+    let bc='background:var(--bg);color:var(--text2);';
+    if(l==='sent'||l.includes('deliver'))bc='background:var(--mint-bg);color:#065F46;';
+    else if(l.includes('pending'))bc='background:var(--amber-bg);color:#92400E;';
+    else if(l.includes('resent')||l.includes('reissue'))bc='background:var(--red-bg);color:#991B1B;';
+    else if(l.includes('name change'))bc='background:var(--lav-bg);color:#5B21B6;';
+    const ai=all.indexOf(r);
+    return`<div class="pf-srch-item" onclick="pfClickResult(${ai})">
+      <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${st||'—'}</span></div>
+      <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span><span>⚙️ ${r['Engine No']||'—'}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// Step 1: Preface click → go to dashboard → filter to show record in table
+// Step 2: User sees record in table → clicks Edit or row → popup opens with Print+Copy
+function pfClickResult(ai){
+  const r=all[ai];
+  // Go to dashboard
+  document.getElementById('preface').classList.remove('active');
+  document.getElementById('dashboard').classList.add('active');
+  // Filter dashboard to show this record
+  fil=[r];pgN=0;
+  document.getElementById('srch').value=String(r['Code']||r['Customer Name']||'');
+  updateKPIs();render();
+  // Highlight by showing popup after short delay
+  setTimeout(()=>showPopup(ai),400);
+}
+
+// DASHBOARD SEARCH — live dropdown
+function onDbSearch(){
+  const q=document.getElementById('srch').value.trim();
+  const dd=document.getElementById('dbDrop');
+  goFilter();
+  if(!q){dd.style.display='none';return;}
+  const sf=['SL','Code','Customer Name','Registration No','Engine No','Chassis No (Primary)','Chassis No (Secondary)','Customer Contact No','Receiver'];
+  const matches=all.filter(r=>sf.some(k=>fuzzyMatch(r[k],q))).slice(0,10);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=matches.map(r=>{
+    const st=String(r['Status']||''),l=st.toLowerCase();
+    let bc='background:var(--bg);color:var(--text2);';
+    if(l==='sent'||l.includes('deliver'))bc='background:var(--mint-bg);color:#065F46;';
+    else if(l.includes('pending'))bc='background:var(--amber-bg);color:#92400E;';
+    else if(l.includes('resent')||l.includes('reissue'))bc='background:var(--red-bg);color:#991B1B;';
+    else if(l.includes('name change'))bc='background:var(--lav-bg);color:#5B21B6;';
+    const ai=all.indexOf(r);
+    return`<div class="db-dd-item" onclick="dbDropClick(${ai})">
+      <div class="db-dd-name">${r['Customer Name']||'—'}<span class="db-dd-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${st||'—'}</span></div>
+      <div class="db-dd-meta"><span>Code: <b>${r['Code']||'—'}</b></span><span>Reg: <b>${r['Registration No']||'—'}</b></span><span>Engine: <b>${r['Engine No']||'—'}</b></span></div>
+    </div>`;
+  }).join('');
+}
+
+// Dashboard dropdown click → close dropdown → open popup
+function dbDropClick(ai){
+  document.getElementById('dbDrop').style.display='none';
+  showPopup(ai);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('dbDrop');
+  if(dd&&!dd.contains(e.target)&&e.target.id!=='srch')dd.style.display='none';
+});
+
+// RECORD POPUP with Print + Copy buttons
+function showPopup(ai){
+  const r=all[ai];
+  const st=String(r['Status']||''),l=st.toLowerCase();
+  let stStyle='background:var(--bg);color:var(--text2);border:2px solid var(--border);';
+  if(l==='sent'||l.includes('deliver'))stStyle='background:var(--mint-bg);color:#065F46;border:2px solid var(--mint-soft);';
+  else if(l.includes('pending'))stStyle='background:var(--amber-bg);color:#92400E;border:2px solid var(--amber-soft);';
+  else if(l.includes('resent')||l.includes('reissue'))stStyle='background:var(--red-bg);color:#991B1B;border:2px solid var(--red-soft);';
+  else if(l.includes('name change'))stStyle='background:var(--lav-bg);color:#5B21B6;border:2px solid var(--lav-soft);';
+
+  document.getElementById('modalArea').innerHTML=`
+  <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
+    <div class="rec-box">
+      <div class="rec-head">
+        <div class="rec-head-title">📋 ${r['Customer Name']||'Record Details'}</div>
+        <button class="rec-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="rec-body">
+        <div class="rec-grid">
+          <div class="rec-field"><div class="rec-label">SL</div><div class="rec-value">${r['SL']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Code</div><div class="rec-value">${r['Code']||'—'}</div></div>
+          <div class="rec-field full"><div class="rec-label">Customer Name</div><div class="rec-value">${r['Customer Name']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Registration No</div><div class="rec-value">${r['Registration No']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Engine No</div><div class="rec-value">${r['Engine No']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Chassis No (Primary)</div><div class="rec-value">${r['Chassis No (Primary)']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Chassis No (Secondary)</div><div class="rec-value">${r['Chassis No (Secondary)']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Contact No</div><div class="rec-value">${r['Customer Contact No']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Status</div><div class="rec-value"><span style="${stStyle};display:inline-block;padding:5px 14px;border-radius:99px;font-weight:800;font-size:12px;">${st||'—'}</span></div></div>
+          <div class="rec-field"><div class="rec-label">Date of Courier</div><div class="rec-value">${r['Date of Courier']||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Receiver</div><div class="rec-value">${r['Receiver']||'—'}</div></div>
+          <div class="rec-field full"><div class="rec-label">Remark</div><div class="rec-value">${r['Remark']||'—'}</div></div>
+        </div>
+      </div>
+      <div class="rec-foot">
+        <button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button>
+        <button class="rec-btn rec-btn-copy" onclick="copyRec(${ai})">📋 Copy Text</button>
+        <button class="rec-btn rec-btn-print" onclick="printRec(${ai})">🖨 Print</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function copyRec(ai){
+  const r=all[ai];
+  const txt=`Customer Name : ${r['Customer Name']||'—'}\nCode          : ${r['Code']||'—'}\nRegistration  : ${r['Registration No']||'—'}\nEngine No     : ${r['Engine No']||'—'}\nChassis (Pri) : ${r['Chassis No (Primary)']||'—'}\nChassis (Sec) : ${r['Chassis No (Secondary)']||'—'}\nContact No    : ${r['Customer Contact No']||'—'}\nStatus        : ${r['Status']||'—'}\nCourier Date  : ${r['Date of Courier']||'—'}\nReceiver      : ${r['Receiver']||'—'}\nRemark        : ${r['Remark']||'—'}`;
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=txt;
+    ta.style.position='fixed';
+    ta.style.top='-9999px';
+    ta.style.left='-9999px';
+    ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(ok){
+      const btn=document.querySelector('.rec-btn-copy');
+      if(btn){const orig=btn.textContent;btn.textContent='✅ Copied!';btn.style.background='var(--mint-bg)';btn.style.borderColor='var(--mint-soft)';btn.style.color='#065F46';setTimeout(()=>{btn.textContent=orig;btn.style.background='';btn.style.borderColor='';btn.style.color='';},2000);}
+    }else{alert('Could not copy. Please select and copy manually.');}
+  }catch(e){alert('Copy failed: '+e.message);}
+}
+
+function printRec(ai){
+  const r=all[ai];
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>${r['Customer Name']||'Record'}</title>
+  <style>body{font-family:Arial,sans-serif;padding:28px;color:#0F1E38;max-width:680px;margin:0 auto;}
+  h2{font-size:17px;margin-bottom:4px;}h3{font-size:11px;color:#6A7A9A;margin-bottom:18px;font-weight:400;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+  .f .l{font-size:9px;font-weight:700;color:#6A7A9A;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+  .f .v{font-size:13px;font-weight:600;color:#0F1E38;padding:7px 11px;background:#F0F4F8;border-radius:6px;border:1px solid #C8D4E8;}
+  .full{grid-column:1/-1;}
+  .footer{margin-top:20px;padding-top:10px;border-top:1px solid #C8D4E8;font-size:10px;color:#6A7A9A;}
+  @media print{body{padding:15px;}}</style>
+  </head><body>
+  <h2>📋 FOTON-ACI Motors — Ownership Record</h2>
+  <h3>Printed: ${new Date().toLocaleString()}</h3>
+  <div class="grid">
+    <div class="f"><div class="l">SL</div><div class="v">${r['SL']||'—'}</div></div>
+    <div class="f"><div class="l">Code</div><div class="v">${r['Code']||'—'}</div></div>
+    <div class="f full"><div class="l">Customer Name</div><div class="v">${r['Customer Name']||'—'}</div></div>
+    <div class="f"><div class="l">Registration No</div><div class="v">${r['Registration No']||'—'}</div></div>
+    <div class="f"><div class="l">Engine No</div><div class="v">${r['Engine No']||'—'}</div></div>
+    <div class="f"><div class="l">Chassis (Primary)</div><div class="v">${r['Chassis No (Primary)']||'—'}</div></div>
+    <div class="f"><div class="l">Chassis (Secondary)</div><div class="v">${r['Chassis No (Secondary)']||'—'}</div></div>
+    <div class="f"><div class="l">Contact No</div><div class="v">${r['Customer Contact No']||'—'}</div></div>
+    <div class="f"><div class="l">Status</div><div class="v">${r['Status']||'—'}</div></div>
+    <div class="f"><div class="l">Date of Courier</div><div class="v">${r['Date of Courier']||'—'}</div></div>
+    <div class="f"><div class="l">Receiver</div><div class="v">${r['Receiver']||'—'}</div></div>
+    <div class="f full"><div class="l">Remark</div><div class="v">${r['Remark']||'—'}</div></div>
+  </div>
+  <div class="footer">FOTON-ACI Motors Ownership Papers Database — Confidential</div>
+  <script>window.onload=function(){window.print()}<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+// NAVIGATION
+function goToDashboard(){
+  document.getElementById('preface').classList.remove('active');
+  document.getElementById('dashboard').classList.add('active');
+  if(all.length>0){fil=[...all];pgN=0;updateKPIs();render();}
+  else loadData();
+}
+function goToPreface(){
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('preface').classList.add('active');
+}
+
+// FUZZY SEARCH
+function fuzzyMatch(str,q){
+  if(!q)return true;
+  str=String(str||'').toLowerCase();q=q.toLowerCase().trim();
+  if(str.includes(q))return true;
+  let si=0;for(let i=0;i<q.length;i++){si=str.indexOf(q[i],si);if(si===-1)return false;si++;}
+  return true;
+}
+
+// FILTER
+function goFilter(){
+  const q=document.getElementById('srch').value.trim();
+  const st=document.getElementById('fSt').value.toLowerCase();
+  const rv=document.getElementById('fRv').value.toLowerCase();
+  const d1=document.getElementById('fD1').value;
+  const d2=document.getElementById('fD2').value;
+  const sf=['SL','Code','Customer Name','Registration No','Engine No','Chassis No (Primary)','Chassis No (Secondary)','Customer Contact No','Receiver','Remark'];
+  fil=all.filter(r=>{
+    const mQ=!q||sf.some(k=>fuzzyMatch(r[k],q));
+    const mS=!st||String(r['Status']||'').toLowerCase().includes(st);
+    const mR=!rv||String(r['Receiver']||'').toLowerCase().includes(rv);
+    let mD=true;
+    if(d1||d2){const dt=new Date(String(r['Date of Courier']||''));if(!isNaN(dt)){if(d1&&dt<new Date(d1))mD=false;if(d2&&dt>new Date(d2))mD=false;}else mD=false;}
+    return mQ&&mS&&mR&&mD;
+  });
+  if(sCol)fil.sort((a,b)=>{const av=String(a[sCol]||''),bv=String(b[sCol]||'');return sAsc?av.localeCompare(bv,undefined,{numeric:true}):bv.localeCompare(av,undefined,{numeric:true});});
+  pgN=0;render();
+}
+function srt(col){if(sCol===col)sAsc=!sAsc;else{sCol=col;sAsc=true;}goFilter();}
+function clrF(){['srch','fD1','fD2'].forEach(id=>document.getElementById(id).value='');['fSt','fRv'].forEach(id=>document.getElementById(id).selectedIndex=0);document.getElementById('dbDrop').style.display='none';goFilter();}
+
+function getBdg(s){
+  const v=String(s||''),l=v.toLowerCase();
+  if(l.includes('name change'))return`<span class="bdg b-name">${v||'—'}</span>`;
+  if(l.includes('resent')||l.includes('reissue'))return`<span class="bdg b-issue">${v||'—'}</span>`;
+  if(l==='sent')return`<span class="bdg b-sent">${v||'—'}</span>`;
+  if(l.includes('deliver'))return`<span class="bdg b-delivered">${v||'—'}</span>`;
+  if(l.includes('pending'))return`<span class="bdg b-pending">${v||'—'}</span>`;
+  return`<span class="bdg b-other">${v||'—'}</span>`;
+}
+function getRC(s){
+  const l=String(s||'').toLowerCase();
+  if(l.includes('resent')||l.includes('reissue'))return'row-issue';
+  if(l==='sent')return'row-sent';
+  if(l.includes('deliver'))return'row-delivered';
+  if(l.includes('pending')||l.includes('name change'))return'row-pending';
+  return'';
+}
+
+function render(){
+  const start=pgN*PS,slice=fil.slice(start,start+PS);
+  const tb=document.getElementById('tbody');
+  if(!slice.length){tb.innerHTML='<tr><td colspan="13" class="empty">No records found.</td></tr>';document.getElementById('pgInfo').textContent='0 results';document.getElementById('pgPrev').disabled=true;document.getElementById('pgNext').disabled=true;return;}
+  tb.innerHTML=slice.map(r=>{
+    const st=String(r['Status']||'');
+    const ai=all.indexOf(r);
+    return`<tr class="${getRC(st)}" style="cursor:pointer;" onclick="showPopup(${ai})">${KEYS.map((k,ki)=>{const v=r[k]!==undefined&&r[k]!==null?String(r[k]):'—';return ki===8?`<td>${getBdg(v)}</td>`:`<td title="${v}">${v}</td>`;}).join('')}<td onclick="event.stopPropagation()"><button class="edit-btn" onclick="openEdit(${ai})">Edit</button></td></tr>`;
+  }).join('');
+  const total=fil.length,end=Math.min(start+PS,total);
+  document.getElementById('pgInfo').textContent=`Showing ${start+1}–${end} of ${total} records`;
+  document.getElementById('pgPrev').disabled=pgN===0;
+  document.getElementById('pgNext').disabled=end>=total;
+}
+function chgPg(d){pgN+=d;render();window.scrollTo(0,0);}
+
+function openEdit(ai){
+  const r=all[ai];
+  const flds=KEYS.map(k=>{
+    if(k==='Status')return`<div class="ff"><label>${k}</label><select id="ef_Status">${['','Sent','Delivered','Pending','Name Change','Sent Resent','Re-Issue'].map(o=>`<option${r[k]===o?' selected':''}>${o}</option>`).join('')}</select></div>`;
+    const isD=k==='Date of Courier',v=r[k]!==undefined?String(r[k]):'';
+    const dv=isD&&v?new Date(v).toISOString().split('T')[0]:'';
+    return`<div class="ff${k==='Remark'?' full':''}"><label>${k}</label><input type="${isD?'date':'text'}" id="ef_${k.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')}" value="${isD?dv:v.replace(/"/g,'&quot;')}" /></div>`;
+  }).join('');
+  document.getElementById('modalArea').innerHTML=`<div class="edit-ov" onclick="if(event.target===this)closeModal()"><div class="edit-box"><div class="edit-title">Edit — ${r['Customer Name']||'Row '+(ai+1)}</div><div class="fgrid">${flds}</div><div class="macts"><button class="m-cancel" onclick="closeModal()">Cancel</button><button class="m-save" onclick="saveEdit(${ai})">Save Changes</button></div></div></div>`;
+}
+function closeModal(){document.getElementById('modalArea').innerHTML='';}
+function saveEdit(ai){KEYS.forEach(k=>{const id='ef_'+k.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');const el=document.getElementById(id);if(el)all[ai][k]=el.value;});closeModal();goFilter();updateKPIs();}
+
+function exportExcel(){
+  if(!fil.length)return;
+  const ws=XLSX.utils.json_to_sheet(fil.map(r=>{const o={};KEYS.forEach(k=>o[k]=r[k]||'');return o;}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Customers');
+  XLSX.writeFile(wb,'ACI_Foton_'+new Date().toISOString().split('T')[0]+'.xlsx');
+}
+function exportPDF(){
+  const w=window.open('','_blank');
+  const rows=fil.map(r=>'<tr>'+KEYS.map(k=>`<td>${r[k]||''}</td>`).join('')+'</tr>').join('');
+  w.document.write(`<html><head><title>ACI Foton</title><style>body{font-family:sans-serif;font-size:10px;}h2{font-size:12px;margin-bottom:6px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:3px 5px;}th{background:#f4f7fb;font-weight:700;font-size:9px;text-transform:uppercase;}</style></head><body><h2>FOTON-ACI Motors — Ownership Papers | ${new Date().toLocaleDateString()} | ${fil.length} records</h2><table><thead><tr>${KEYS.map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  w.document.close();w.print();
+}
+function printView(){
+  const w=window.open('','_blank');
+  const rows=fil.map(r=>'<tr>'+KEYS.map(k=>`<td>${r[k]||''}</td>`).join('')+'</tr>').join('');
+  w.document.write(`<html><head><title>Print</title><style>@media print{body{font-size:9px;}}body{font-family:sans-serif;font-size:10px;}h2{font-size:12px;margin-bottom:6px;}table{width:100%;border-collapse:collapse;}th,td{border:0.5px solid #ccc;padding:3px 5px;}th{background:#eee;font-weight:700;}</style></head><body><h2>FOTON-ACI Motors — Ownership Papers | ${new Date().toLocaleString()} | ${fil.length} records</h2><table><thead><tr>${KEYS.map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  w.document.close();w.print();
+}
+
+// MONTH DATA POPUP — click bar chart month
+function showMonthData(monthKey){
+  const parts=monthKey.split(' ');
+  const mIdx=MONTHS.indexOf(parts[0]);
+  const yr=2000+parseInt(parts[1]);
+  const records=all.filter(r=>{
+    const st=String(r['Status']||'').toLowerCase().trim();
+    if(!(st==='sent'||st==='delivered'||st.includes('resent')||st.includes('reissue')))return false;
+    const dt=new Date(String(r['Date of Courier']||''));
+    return !isNaN(dt.getTime())&&dt.getMonth()===mIdx&&dt.getFullYear()===yr;
+  });
+  if(!records.length){alert('No sent records found for '+monthKey);return;}
+  const rows=records.map(r=>`
+    <tr style="border-bottom:1px solid var(--bg);">
+      <td style="padding:8px 10px;font-weight:700;color:var(--navy);">${r['Code']||'—'}</td>
+      <td style="padding:8px 10px;color:var(--navy);">${r['Customer Name']||'—'}</td>
+      <td style="padding:8px 10px;color:var(--text2);">${r['Registration No']||'—'}</td>
+      <td style="padding:8px 10px;">${getBdg(r['Status']||'')}</td>
+      <td style="padding:8px 10px;color:var(--text3);font-size:11px;">${r['Date of Courier']||'—'}</td>
+      <td style="padding:8px 10px;color:var(--text3);font-size:11px;">${r['Receiver']||'—'}</td>
+    </tr>`).join('');
+  document.getElementById('modalArea').innerHTML=`
+  <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
+    <div class="rec-box" style="max-width:720px;">
+      <div class="rec-head">
+        <div class="rec-head-title">📅 ${monthKey} — Sent Records (${records.length} total)</div>
+        <button class="rec-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="rec-body" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#E8EEF8;border-bottom:2px solid var(--border);">
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Code</th>
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Customer Name</th>
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Reg. No</th>
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Status</th>
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Courier Date</th>
+              <th style="padding:10px;text-align:left;font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;">Receiver</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="rec-foot">
+        <button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button>
+        <button class="rec-btn rec-btn-print" onclick="printMonthData('${monthKey}')">🖨 Print</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printMonthData(monthKey){
+  const parts=monthKey.split(' ');
+  const mIdx=MONTHS.indexOf(parts[0]);
+  const yr=2000+parseInt(parts[1]);
+  const records=all.filter(r=>{
+    const st=String(r['Status']||'').toLowerCase().trim();
+    if(!(st==='sent'||st==='delivered'||st.includes('resent')||st.includes('reissue')))return false;
+    const dt=new Date(String(r['Date of Courier']||''));
+    return !isNaN(dt.getTime())&&dt.getMonth()===mIdx&&dt.getFullYear()===yr;
+  });
+  const w=window.open('','_blank');
+  const rows=records.map(r=>`<tr><td>${r['Code']||''}</td><td>${r['Customer Name']||''}</td><td>${r['Registration No']||''}</td><td>${r['Status']||''}</td><td>${r['Date of Courier']||''}</td><td>${r['Receiver']||''}</td></tr>`).join('');
+  w.document.write(`<html><head><title>${monthKey} Sent Records</title><style>body{font-family:Arial,sans-serif;padding:24px;font-size:11px;}h2{font-size:15px;margin-bottom:4px;}h3{font-size:11px;color:#6A7A9A;margin-bottom:16px;font-weight:400;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:5px 8px;text-align:left;}th{background:#f4f7fb;font-weight:700;font-size:10px;text-transform:uppercase;}@media print{body{padding:10px;}}</style></head><body><h2>📅 FOTON-ACI Motors — ${monthKey} Sent Records</h2><h3>Total: ${records.length} records | Printed: ${new Date().toLocaleString()}</h3><table><thead><tr><th>Code</th><th>Customer Name</th><th>Reg. No</th><th>Status</th><th>Courier Date</th><th>Receiver</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){window.print()}<\/script></body></html>`);
+  w.document.close();
+}
+
+// ═══════════════════════════════════════════
+// REQUISITION SYSTEM — Smart Code Check
+// ═══════════════════════════════════════════
+const SHEET2='https://script.google.com/macros/s/AKfycbwZoixTYgM6EWN1HF5QEtJGZLgFhlzblQ6JATRnakq31RgMHgFneXEqb2jMLg4LGEx8/exec';
+let sheet2Data=[];
+let requisitions=JSON.parse(localStorage.getItem('aci_requisitions')||'[]');
+let currentRole='';
+let reqCodeStatus=''; // 'ok', 'sent', 'active', 'pending', 'notfound'
+
+function saveRequisitions(){localStorage.setItem('aci_requisitions',JSON.stringify(requisitions));}
+
+async function loadSheet2(){
+  if(sheet2Data.length>0)return sheet2Data;
+  try{
+    const d=await jsonpFetch(SHEET2);
+    sheet2Data=Array.isArray(d)?d:[];
+    return sheet2Data;
+  }catch(e){console.error('Sheet2 error:',e);return[];}
+}
+
+function openRequisitionPanel(){
+  const html=currentRole==='officer'?buildOfficerPanel():currentRole==='manager'?buildManagerPanel():buildAdminPanel();
+  document.getElementById('modalArea').innerHTML=`
+  <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
+    <div class="rec-box" style="max-width:660px;">
+      <div class="rec-head">
+        <div class="rec-head-title">${currentRole==='officer'?'📤 Submit Requisition':currentRole==='manager'?'✅ Approval Panel':'👑 Requisition Overview'}</div>
+        <button class="rec-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="rec-body" style="padding:16px;">${html}</div>
+    </div>
+  </div>`;
+}
+
+// ── OFFICER PANEL ──
+function buildOfficerPanel(){
+  const myReqs=requisitions.slice(0,20);
+  return`
+  <div class="req-panel">
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:4px;">Submit New Requisition</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:16px;">Enter the customer code — details will auto-fill from the registry</div>
+
+    <div class="req-field-group" style="grid-template-columns:1fr;">
+      <div>
+        <label class="req-label">Customer Code *</label>
+        <input class="req-input" id="reqCode" placeholder="e.g. N002211" oninput="reqCodeInput()" autocomplete="off" autocapitalize="characters"/>
+      </div>
+    </div>
+
+    <div class="req-status-box" id="reqStatusBox"></div>
+
+    <div class="req-field-group" id="reqAutoFields" style="display:none;">
+      <div>
+        <label class="req-label">Customer Name (Auto-filled)</label>
+        <input class="req-input req-input-readonly" id="reqName" readonly/>
+      </div>
+      <div>
+        <label class="req-label">Registration No (Auto-filled)</label>
+        <input class="req-input req-input-readonly" id="reqReg" readonly/>
+      </div>
+      <div>
+        <label class="req-label">Request Type *</label>
+        <select class="req-input" id="reqType">
+          <option value="">Select type...</option>
+          <option value="New">New</option>
+          <option value="Name Change">Name Change</option>
+          <option value="Re-Issue">Re-Issue</option>
+          <option value="Duplicate">Duplicate</option>
+        </select>
+      </div>
+      <div>
+        <label class="req-label">Your Name *</label>
+        <input class="req-input" id="reqOfficer" placeholder="Your full name"/>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="req-label">Note (Optional)</label>
+        <input class="req-input" id="reqNote" placeholder="Any additional notes..."/>
+      </div>
+    </div>
+
+    <button class="req-submit-btn" id="reqSubmitBtn" onclick="submitRequisition()" disabled>Submit Requisition →</button>
+
+    <hr class="req-divider"/>
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:12px;">📋 Recent Requisitions</div>
+    ${buildReqList(myReqs)}
+  </div>`;
+}
+
+// Smart code input handler
+async function reqCodeInput(){
+  const code=document.getElementById('reqCode').value.trim().toUpperCase();
+  const statusBox=document.getElementById('reqStatusBox');
+  const autoFields=document.getElementById('reqAutoFields');
+  const submitBtn=document.getElementById('reqSubmitBtn');
+  reqCodeStatus='';
+
+  statusBox.style.display='none';
+  autoFields.style.display='none';
+  submitBtn.disabled=true;
+  document.getElementById('reqCode').value=code;
+
+  if(code.length<3)return;
+
+  // Show loading
+  statusBox.className='req-status-box req-status-warn';
+  statusBox.style.display='block';
+  statusBox.textContent='🔍 Checking code...';
+
+  // Step 1: Check Sheet 1 (sent records)
+  const sheet1Match=all.find(r=>String(r['Code']||'').toUpperCase()===code);
+  if(sheet1Match){
+    const st=String(sheet1Match['Status']||'').toLowerCase();
+    if(st==='sent'||st.includes('deliver')){
+      statusBox.className='req-status-box req-status-err';
+      statusBox.innerHTML=`🚫 <strong>Cannot Submit</strong><br>This ownership paper was already <strong>Sent</strong> on ${sheet1Match['Date of Courier']||'N/A'}.<br>Customer: ${sheet1Match['Customer Name']||'—'} | Reg: ${sheet1Match['Registration No']||'—'}`;
+      reqCodeStatus='sent';return;
+    }else{
+      statusBox.className='req-status-box req-status-err';
+      statusBox.innerHTML=`⚠️ <strong>Cannot Submit</strong><br>This code already has an active record in the database.<br>Status: <strong>${sheet1Match['Status']||'Unknown'}</strong> | Customer: ${sheet1Match['Customer Name']||'—'}`;
+      reqCodeStatus='active';return;
+    }
+  }
+
+  // Step 2: Check existing requisitions
+  const existingReq=requisitions.find(r=>String(r['code']||'').toUpperCase()===code&&r.status!=='Sent');
+  if(existingReq){
+    statusBox.className='req-status-box req-status-err';
+    statusBox.innerHTML=`⚠️ <strong>Cannot Submit</strong><br>A requisition for this code already exists.<br>Status: <strong>${existingReq.status}</strong> | Submitted: ${existingReq.submittedDate}`;
+    reqCodeStatus='pending';return;
+  }
+
+  // Step 3: Check Sheet 2 (registry)
+  const data=await loadSheet2();
+  const found=data.find(r=>String(r['CustomerCode']||'').toUpperCase()===code);
+  if(found){
+    document.getElementById('reqName').value=found['Customer Name']||'';
+    document.getElementById('reqReg').value=found['REG NO']||'';
+    statusBox.className='req-status-box req-status-ok';
+    statusBox.innerHTML=`✅ <strong>Customer Found!</strong><br>${found['Customer Name']||'—'} | Reg: ${found['REG NO']||'—'}<br>You can now submit a requisition for this code.`;
+    autoFields.style.display='grid';
+    submitBtn.disabled=false;
+    reqCodeStatus='ok';
+  }else{
+    statusBox.className='req-status-box req-status-err';
+    statusBox.innerHTML=`❌ <strong>Code Not Found</strong><br>This code does not exist in the vehicle registry.<br>Please check and try again.`;
+    reqCodeStatus='notfound';
+  }
+}
+
+function submitRequisition(){
+  if(reqCodeStatus!=='ok'){alert('Please enter a valid code first.');return;}
+  const code=document.getElementById('reqCode').value.trim().toUpperCase();
+  const name=document.getElementById('reqName').value.trim();
+  const reg=document.getElementById('reqReg').value.trim();
+  const type=document.getElementById('reqType').value;
+  const officer=document.getElementById('reqOfficer').value.trim();
+  const note=document.getElementById('reqNote').value.trim();
+  if(!type||!officer){alert('Please fill in Request Type and Your Name.');return;}
+  const req={
+    id:'REQ-'+Date.now(),
+    code,customerName:name,regNo:reg,type,officer,note,
+    status:'Requisition Submitted',
+    submittedDate:new Date().toLocaleString(),
+    approvedDate:'',approvedBy:'',sentDate:''
+  };
+  requisitions.unshift(req);
+  saveRequisitions();
+  alert('✅ Requisition submitted!\n\nCode: '+code+'\nCustomer: '+name+'\nType: '+type+'\nStatus: Requisition Submitted');
+  openRequisitionPanel();
+}
+
+// ── MANAGER PANEL ──
+function buildManagerPanel(){
+  const pending=requisitions.filter(r=>r.status==='Requisition Submitted');
+  const approved=requisitions.filter(r=>r.status==='Approved — Work in Progress');
+  return`
+  <div class="req-panel">
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:16px;">Pending Approval <span style="background:var(--amber-bg);color:#92400E;padding:3px 10px;border-radius:99px;font-size:12px;border:1px solid var(--amber-soft);">${pending.length}</span></div>
+    ${pending.length?pending.map(r=>`
+    <div style="background:var(--amber-bg);border:2px solid var(--amber-soft);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px;">${r.customerName||'—'}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:2px;">Code: <b>${r.code}</b> | Reg: ${r.regNo||'—'}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:2px;">Type: ${r.type||'—'} | Officer: ${r.officer||'—'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">📤 ${r.submittedDate}</div>
+      ${r.note?`<div style="font-size:11px;color:var(--text2);margin-bottom:10px;font-style:italic;">Note: ${r.note}</div>`:''}
+      <button onclick="approveReq('${r.id}')" style="background:var(--blue);border:none;border-radius:9px;padding:11px 20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,sans-serif;width:100%;">✅ Approve This Requisition</button>
+    </div>`).join(''):`<div style="font-size:13px;color:var(--text3);padding:16px 0;text-align:center;">✨ No pending requisitions</div>`}
+    <hr class="req-divider"/>
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:12px;">Already Approved (${approved.length})</div>
+    ${buildReqList(approved)}
+  </div>`;
+}
+
+// ── ADMIN PANEL ──
+function buildAdminPanel(){
+  const approved=requisitions.filter(r=>r.status==='Approved — Work in Progress');
+  const all_reqs=requisitions;
+  return`
+  <div class="req-panel">
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:16px;">Ready to Process <span style="background:var(--blue-bg);color:#1E40AF;padding:3px 10px;border-radius:99px;font-size:12px;border:1px solid var(--blue-soft);">${approved.length}</span></div>
+    ${approved.length?approved.map(r=>`
+    <div style="background:var(--blue-bg);border:2px solid var(--blue-soft);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px;">${r.customerName||'—'}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:2px;">Code: <b>${r.code}</b> | Reg: ${r.regNo||'—'}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:2px;">Type: ${r.type||'—'} | Officer: ${r.officer||'—'}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">📤 ${r.submittedDate}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">✅ Approved: ${r.approvedDate}</div>
+      <button onclick="markAsSent('${r.id}')" style="background:var(--mint);border:none;border-radius:9px;padding:11px 20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,sans-serif;width:100%;">📦 Mark as Sent</button>
+    </div>`).join(''):`<div style="font-size:13px;color:var(--text3);padding:16px 0;text-align:center;">No approved requisitions to process</div>`}
+    <hr class="req-divider"/>
+    <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:12px;">All Requisitions (${all_reqs.length})</div>
+    ${buildReqList(all_reqs)}
+  </div>`;
+}
+
+function buildReqList(reqs){
+  if(!reqs.length)return`<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">No records yet.</div>`;
+  return reqs.map(r=>{
+    const stC=r.status==='Sent'?'#065F46':r.status==='Approved — Work in Progress'?'#1E40AF':'#92400E';
+    const stB=r.status==='Sent'?'var(--mint-bg)':r.status==='Approved — Work in Progress'?'var(--blue-bg)':'var(--amber-bg)';
+    return`<div style="background:var(--white);border:2px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);">${r.customerName||'—'} <span style="font-size:11px;color:var(--text3);">(${r.code})</span></div>
+        <span style="background:${stB};color:${stC};padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;">${r.status}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">
+        ${r.submittedDate?'📤 Submitted: '+r.submittedDate:''}
+        ${r.approvedDate?'<br>✅ Approved: '+r.approvedDate:''}
+        ${r.sentDate?'<br>📦 Sent: '+r.sentDate:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function approveReq(id){
+  if(!confirm('Approve this requisition?'))return;
+  const idx=requisitions.findIndex(r=>r.id===id);
+  if(idx>=0){
+    requisitions[idx].status='Approved — Work in Progress';
+    requisitions[idx].approvedDate=new Date().toLocaleString();
+    requisitions[idx].approvedBy='Manager';
+    saveRequisitions();
+    alert('✅ Requisition approved!');
+    openRequisitionPanel();
+  }
+}
+
+function markAsSent(id){
+  if(!confirm('Mark this as Sent?'))return;
+  const idx=requisitions.findIndex(r=>r.id===id);
+  if(idx>=0){
+    requisitions[idx].status='Sent';
+    requisitions[idx].sentDate=new Date().toLocaleString();
+    saveRequisitions();
+    alert('✅ Marked as Sent!');
+    openRequisitionPanel();
+  }
+}
+
+function saveRequisitions(){localStorage.setItem('aci_requisitions',JSON.stringify(requisitions));}
+
+async function loadSheet2(){
+  if(sheet2Data.length>0)return sheet2Data;
+  try{const d=await jsonpFetch(SHEET2);sheet2Data=Array.isArray(d)?d:[];return sheet2Data;}
+  catch(e){console.error('Sheet2 load error:',e);return[];}
+}
+
+function openRequisitionPanel(){
+  document.getElementById('modalArea').innerHTML=`
+  <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
+    <div class="rec-box" style="max-width:680px;">
+      <div class="rec-head">
+        <div class="rec-head-title">📋 Requisition System</div>
+        <button class="rec-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="rec-body">
+        ${currentRole==='officer'?renderOfficerPanel():currentRole==='manager'?renderManagerPanel():renderAdminReqPanel()}
+      </div>
+    </div>
+  </div>`;
+}
+
+// FIELD OFFICER PANEL
+function renderOfficerPanel(){
+  const myReqs=requisitions.filter(r=>r.submittedBy==='Field Officer'||r.role==='officer');
+  return`
+  <div style="margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px;">📤 Submit Requisition</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:16px;">Type the customer code — name and reg. no will auto-fill</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Customer Code *</label>
+        <input id="reqCode" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:var(--bg);outline:none;" placeholder="Enter code..." oninput="autoFillReq()" />
+      </div>
+      <div>
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Request Type *</label>
+        <select id="reqType" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:var(--bg);outline:none;">
+          <option value="">Select type...</option>
+          <option value="New">New</option>
+          <option value="Name Change">Name Change</option>
+          <option value="Re-Issue">Re-Issue</option>
+          <option value="Duplicate">Duplicate</option>
+        </select>
+      </div>
+      <div class="ff full" style="grid-column:1/-1;">
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Customer Name (Auto-filled)</label>
+        <input id="reqName" readonly style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:#F8FAFC;outline:none;" placeholder="Auto-fills when code found..." />
+      </div>
+      <div>
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Registration No (Auto-filled)</label>
+        <input id="reqReg" readonly style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:#F8FAFC;outline:none;" placeholder="Auto-fills when code found..." />
+      </div>
+      <div>
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Your Name *</label>
+        <input id="reqOfficer" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:var(--bg);outline:none;" placeholder="Your name..." />
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;">Note (Optional)</label>
+        <input id="reqNote" style="width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:9px;font-size:13px;font-family:Inter,sans-serif;color:var(--navy);background:var(--bg);outline:none;" placeholder="Any additional notes..." />
+      </div>
+    </div>
+    <div id="reqCodeMsg" style="font-size:12px;margin-bottom:10px;font-weight:600;"></div>
+    <button onclick="submitRequisition()" style="background:var(--navy);border:none;border-radius:9px;padding:11px 24px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,sans-serif;">Submit Requisition →</button>
+  </div>
+  <hr style="border:none;border-top:2px solid var(--border);margin-bottom:16px;"/>
+  <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:12px;">📋 My Submitted Requisitions</div>
+  ${renderReqTable(requisitions,'officer')}`;
+}
+
+// MANAGER PANEL
+function renderManagerPanel(){
+  const pending=requisitions.filter(r=>r.status==='Requisition Submitted');
+  const approved=requisitions.filter(r=>r.status==='Approved — Work in Progress');
+  return`
+  <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:16px;">✅ Manager Approval Panel</div>
+  <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:10px;">🟡 Pending Approval (${pending.length})</div>
+  ${pending.length?pending.map((r,i)=>`
+    <div style="background:var(--amber-bg);border:2px solid var(--amber-soft);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--navy);">${r.customerName||'—'} <span style="font-size:11px;font-weight:500;color:var(--text3);">(${r.code})</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px;">Reg: ${r.regNo||'—'} | Type: ${r.type||'—'} | By: ${r.officer||'—'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Submitted: ${r.submittedDate||'—'}</div>
+        </div>
+        <button onclick="approveReq(${requisitions.indexOf(r)})" style="background:var(--blue);border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,sans-serif;">✅ Approve</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:10px 0;">No pending requisitions.</div>'}
+  <div style="font-size:12px;font-weight:700;color:var(--blue);margin:16px 0 10px;">🔵 Approved (${approved.length})</div>
+  ${renderReqTable(approved,'manager')}`;
+}
+
+// ADMIN PANEL
+function renderAdminReqPanel(){
+  const approved=requisitions.filter(r=>r.status==='Approved — Work in Progress');
+  const sent=requisitions.filter(r=>r.status==='Sent');
+  return`
+  <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:16px;">👑 Admin — Requisition Overview</div>
+  <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px;">🔵 Approved — Ready to Process (${approved.length})</div>
+  ${approved.length?approved.map((r,i)=>`
+    <div style="background:var(--blue-bg);border:2px solid var(--blue-soft);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--navy);">${r.customerName||'—'} <span style="font-size:11px;color:var(--text3);">(${r.code})</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px;">Reg: ${r.regNo||'—'} | Type: ${r.type||'—'} | By: ${r.officer||'—'}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">Submitted: ${r.submittedDate||'—'} | Approved: ${r.approvedDate||'—'}</div>
+        </div>
+        <button onclick="markAsSent(${requisitions.indexOf(r)})" style="background:var(--mint);border:none;border-radius:8px;padding:8px 18px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:Inter,sans-serif;">✅ Mark as Sent</button>
+      </div>
+    </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:10px 0;">No approved requisitions to process.</div>'}
+  <div style="font-size:12px;font-weight:700;color:var(--mint);margin:16px 0 10px;">🟢 Sent (${sent.length})</div>
+  ${renderReqTable(sent,'admin')}
+  <div style="font-size:12px;font-weight:700;color:var(--text2);margin:16px 0 10px;">📋 All Requisitions (${requisitions.length})</div>
+  ${renderReqTable(requisitions,'admin')}`;
+}
+
+function renderReqTable(reqs,role){
+  if(!reqs.length)return'<div style="font-size:12px;color:var(--text3);padding:8px 0;">No records.</div>';
+  return`<div style="overflow-x:auto;border:2px solid var(--border);border-radius:10px;">
+  <table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr style="background:#E8EEF8;">
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Code</th>
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Name</th>
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Reg No</th>
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Type</th>
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Status</th>
+      <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--navy);text-transform:uppercase;">Timeline</th>
+    </tr></thead>
+    <tbody>${reqs.map(r=>{
+      const stColor=r.status==='Sent'?'#065F46':r.status==='Approved — Work in Progress'?'#1E40AF':'#92400E';
+      const stBg=r.status==='Sent'?'var(--mint-bg)':r.status==='Approved — Work in Progress'?'var(--blue-bg)':'var(--amber-bg)';
+      return`<tr style="border-bottom:1px solid var(--bg);">
+        <td style="padding:8px 10px;font-weight:700;color:var(--navy);">${r.code||'—'}</td>
+        <td style="padding:8px 10px;color:var(--navy);">${r.customerName||'—'}</td>
+        <td style="padding:8px 10px;color:var(--text2);">${r.regNo||'—'}</td>
+        <td style="padding:8px 10px;color:var(--text2);">${r.type||'—'}</td>
+        <td style="padding:8px 10px;"><span style="background:${stBg};color:${stColor};padding:2px 8px;border-radius:99px;font-weight:700;font-size:10px;">${r.status}</span></td>
+        <td style="padding:8px 10px;font-size:10px;color:var(--text3);">
+          ${r.submittedDate?'📤 '+r.submittedDate:''}
+          ${r.approvedDate?'<br>✅ '+r.approvedDate:''}
+          ${r.sentDate?'<br>📦 '+r.sentDate:''}
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+async function autoFillReq(){
+  const code=document.getElementById('reqCode').value.trim();
+  const msgEl=document.getElementById('reqCodeMsg');
+  document.getElementById('reqName').value='';
+  document.getElementById('reqReg').value='';
+  if(!code){msgEl.textContent='';return;}
+  const data=await loadSheet2();
+  const found=data.find(r=>String(r['CustomerCode']||'').toLowerCase()===code.toLowerCase());
+  if(found){
+    document.getElementById('reqName').value=found['Customer Name']||'';
+    document.getElementById('reqReg').value=found['REG NO']||'';
+    msgEl.style.color='var(--mint)';
+    msgEl.textContent='✅ Customer found!';
+  }else{
+    msgEl.style.color='var(--red)';
+    msgEl.textContent='❌ Code not found in registry. Please check and try again.';
+  }
+}
+
+function submitRequisition(){
+  const code=document.getElementById('reqCode').value.trim();
+  const name=document.getElementById('reqName').value.trim();
+  const reg=document.getElementById('reqReg').value.trim();
+  const type=document.getElementById('reqType').value;
+  const officer=document.getElementById('reqOfficer').value.trim();
+  const note=document.getElementById('reqNote').value.trim();
+  if(!code||!name||!type||!officer){alert('Please fill all required fields and make sure the code is valid.');return;}
+  const req={
+    id:'REQ-'+Date.now(),
+    code,customerName:name,regNo:reg,type,officer,note,
+    status:'Requisition Submitted',
+    submittedDate:new Date().toLocaleString(),
+    approvedDate:'',approvedBy:'',sentDate:''
+  };
+  requisitions.unshift(req);
+  saveRequisitions();
+  alert('✅ Requisition submitted successfully!\n\nCode: '+code+'\nCustomer: '+name+'\nStatus: Requisition Submitted');
+  openRequisitionPanel();
+}
+
+function approveReq(idx){
+  if(!confirm('Approve this requisition?'))return;
+  requisitions[idx].status='Approved — Work in Progress';
+  requisitions[idx].approvedDate=new Date().toLocaleString();
+  requisitions[idx].approvedBy='Manager';
+  saveRequisitions();
+  openRequisitionPanel();
+}
+
+function markAsSent(idx){
+  if(!confirm('Mark this requisition as Sent?'))return;
+  requisitions[idx].status='Sent';
+  requisitions[idx].sentDate=new Date().toLocaleString();
+  saveRequisitions();
+  openRequisitionPanel();
+}
+let attempts=0;const MAX=5;
+function decodeHash(h){return h.match(/.{2}/g).map(b=>String.fromCharCode(parseInt(b,16))).join('');}
+
+// Passwords encoded
+const PW_ADMIN='41434946'+'4f544f4e'+'57504441'+'5348424f'+'41524432'+'303236';
+const PW_MGR='41434946'+'4f544f4e'+'57504150'+'50524f56'+'414c5041'+'4e454c32'+'303236';
+const PW_OFF='41434946'+'4f544f4e'+'57505245'+'51554953'+'4954494f'+'4e50414e'+'454c3230'+'3236';
+
+function checkPw(){
+  const v=document.getElementById('lockInput').value.trim();
+  const err=document.getElementById('lockErr');const att=document.getElementById('lockAtt');
+  const rem=document.getElementById('rememberMe').checked;
+  let role='';
+  if(v===decodeHash(PW_ADMIN))role='admin';
+  else if(v===decodeHash(PW_MGR))role='manager';
+  else if(v===decodeHash(PW_OFF))role='officer';
+  if(role){
+    currentRole=role;
+    if(rem){localStorage.setItem('aci_pw',btoa(v));localStorage.setItem('aci_role',role);}
+    else{localStorage.removeItem('aci_pw');localStorage.removeItem('aci_role');}
+    document.getElementById('lockScreen').style.display='none';
+    applyRoleUI(role);
+    document.getElementById('preface').classList.add('active');
+    loadPreface();
+  }else{
+    attempts++;err.textContent='Incorrect password. Please try again.';err.style.display='block';
+    document.getElementById('lockInput').value='';document.getElementById('lockInput').focus();
+    if(attempts>=MAX){document.getElementById('lockInput').disabled=true;document.querySelector('.lock-btn').disabled=true;err.textContent='Too many failed attempts. Contact your administrator.';}
+    else{att.textContent=(MAX-attempts)+' attempt(s) remaining.';att.style.display='block';}
+  }
+}
+
+function applyRoleUI(role){
+  const style=document.createElement('style');
+  if(role==='officer'){
+    style.textContent='.edit-btn{display:none!important;}.tbtn.g,.tbtn.a{display:none!important;}';
+  }else if(role==='manager'){
+    style.textContent='.edit-btn{display:none!important;}';
+  }
+  document.head.appendChild(style);
+}
+
+function toggleEye(){const i=document.getElementById('lockInput');const e=document.getElementById('lockEye');if(i.type==='password'){i.type='text';e.textContent='🙈';}else{i.type='password';e.textContent='👁';}}
+
+function logout(){
+  if(confirm('Are you sure you want to logout?')){
+    localStorage.removeItem('aci_pw');localStorage.removeItem('aci_role');
+    document.getElementById('lockInput').value='';document.getElementById('lockInput').disabled=false;
+    document.querySelector('.lock-btn').disabled=false;
+    document.getElementById('lockErr').style.display='none';document.getElementById('lockAtt').style.display='none';
+    document.getElementById('rememberMe').checked=false;
+    document.getElementById('lockScreen').style.display='flex';
+    document.getElementById('dashboard').classList.remove('active');
+    document.getElementById('preface').classList.remove('active');
+    currentRole='';attempts=0;setTimeout(()=>document.getElementById('lockInput').focus(),100);
+  }
+}
+
+window.onload=function(){
+  const saved=localStorage.getItem('aci_pw');
+  const savedRole=localStorage.getItem('aci_role');
+  if(saved&&savedRole){
+    try{
+      document.getElementById('lockInput').value=atob(saved);
+      document.getElementById('rememberMe').checked=true;
+    }catch(e){localStorage.removeItem('aci_pw');localStorage.removeItem('aci_role');}
+  }
+  setTimeout(()=>document.getElementById('lockInput').focus(),100);
+};
+</script>
+</body>
+</html>
