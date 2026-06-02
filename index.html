@@ -766,31 +766,90 @@ async function loadPreface(){
   }
 }
 
-// PREFACE SEARCH — click goes to dashboard, shows record, opens popup
-function pfDoSearch(){
+// PREFACE SEARCH — checks Sheet 1 first, then Sheet 2
+async function pfDoSearch(){
   const q=document.getElementById('pfSearchInput').value.trim();
   const rb=document.getElementById('pfResults');
   const nr=document.getElementById('pfNoRes');
   const hint=document.getElementById('pfHint');
   if(!q){rb.style.display='none';nr.style.display='none';hint.style.display='block';return;}
   hint.style.display='none';
+
   const sf=['SL','Code','Customer Name','Registration No','Engine No','Chassis No (Primary)','Chassis No (Secondary)','Customer Contact No','Receiver'];
   const matches=all.filter(r=>sf.some(k=>fuzzyMatch(r[k],q))).slice(0,12);
-  if(!matches.length){rb.style.display='none';nr.style.display='block';return;}
-  nr.style.display='none';rb.style.display='block';
-  rb.innerHTML=matches.map(r=>{
-    const st=String(r['Status']||''),l=st.toLowerCase();
-    let bc='background:var(--bg);color:var(--text2);';
-    if(l==='sent'||l.includes('deliver'))bc='background:var(--mint-bg);color:#065F46;';
-    else if(l.includes('pending'))bc='background:var(--amber-bg);color:#92400E;';
-    else if(l.includes('resent')||l.includes('reissue'))bc='background:var(--red-bg);color:#991B1B;';
-    else if(l.includes('name change'))bc='background:var(--lav-bg);color:#5B21B6;';
-    const ai=all.indexOf(r);
-    return`<div class="pf-srch-item" onclick="pfClickResult(${ai})">
-      <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${st||'—'}</span></div>
-      <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span><span>⚙️ ${r['Engine No']||'—'}</span></div>
-    </div>`;
-  }).join('');
+
+  if(matches.length){
+    nr.style.display='none';rb.style.display='block';
+    rb.innerHTML=matches.map(r=>{
+      const st=String(r['Status']||''),l=st.toLowerCase();
+      let bc='background:var(--bg);color:var(--text2);';
+      if(l==='sent'||l.includes('deliver'))bc='background:var(--mint-bg);color:#065F46;';
+      else if(l.includes('pending'))bc='background:var(--amber-bg);color:#92400E;';
+      else if(l.includes('resent')||l.includes('reissue'))bc='background:var(--red-bg);color:#991B1B;';
+      else if(l.includes('name change'))bc='background:var(--lav-bg);color:#5B21B6;';
+      const ai=all.indexOf(r);
+      return`<div class="pf-srch-item" onclick="pfClickResult(${ai})">
+        <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${st||'—'}</span></div>
+        <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span><span>⚙️ ${r['Engine No']||'—'}</span></div>
+      </div>`;
+    }).join('');
+  } else {
+    // Not in Sheet 1 — check Sheet 2
+    rb.style.display='block';
+    nr.style.display='none';
+    rb.innerHTML=`<div class="pf-srch-item" style="color:var(--text3);font-size:12px;pointer-events:none;">🔍 Checking vehicle registry...</div>`;
+    try{
+      const s2=await loadSheet2();
+      const s2matches=s2.filter(r=>
+        fuzzyMatch(r['CustomerCode'],q)||
+        fuzzyMatch(r['Customer Name'],q)||
+        fuzzyMatch(r['REG NO'],q)
+      ).slice(0,12);
+      if(s2matches.length){
+        rb.innerHTML=`<div style="padding:8px 14px;font-size:10px;font-weight:700;color:#92400E;background:var(--amber-bg);border-bottom:1px solid var(--amber-soft);">📋 Found in Vehicle Registry — Ownership Paper Not Yet Processed</div>`+
+        s2matches.map(r=>`
+          <div class="pf-srch-item" onclick="pfShowSheet2Record('${(r['CustomerCode']||'').replace(/'/g,"\\'")}','${(r['Customer Name']||'').replace(/'/g,"\\'")}','${(r['REG NO']||'').replace(/'/g,"\\'")}')">
+            <div class="pf-srch-name">${r['Customer Name']||'—'} <span style="background:var(--amber-bg);color:#92400E;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid var(--amber-soft);">Not Processed</span></div>
+            <div class="pf-srch-meta"><span>📋 Code: <b>${r['CustomerCode']||'—'}</b></span><span>🔑 Reg: <b>${r['REG NO']||'—'}</b></span></div>
+          </div>`).join('');
+      } else {
+        rb.style.display='none';
+        nr.style.display='block';
+        nr.textContent='❌ No records found in database or vehicle registry.';
+      }
+    }catch(e){
+      rb.style.display='none';
+      nr.style.display='block';
+      nr.textContent='❌ Not found. Registry connection failed — check internet.';
+    }
+  }
+}
+
+function pfShowSheet2Record(code,name,reg){
+  document.getElementById('modalArea').innerHTML=`
+  <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
+    <div class="rec-box" style="max-width:480px;">
+      <div class="rec-head" style="background:var(--amber);">
+        <div class="rec-head-title">📋 Vehicle Registry Record</div>
+        <button class="rec-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="rec-body">
+        <div style="background:var(--amber-bg);border:2px solid var(--amber-soft);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;color:#92400E;font-weight:600;">
+          ⚠️ This vehicle exists in the registry but ownership paper has <strong>not been processed yet</strong>.
+        </div>
+        <div class="rec-grid">
+          <div class="rec-field"><div class="rec-label">Code</div><div class="rec-value">${code||'—'}</div></div>
+          <div class="rec-field"><div class="rec-label">Registration No</div><div class="rec-value">${reg||'—'}</div></div>
+          <div class="rec-field full"><div class="rec-label">Customer Name</div><div class="rec-value">${name||'—'}</div></div>
+          <div class="rec-field full"><div class="rec-label">Status</div><div class="rec-value"><span style="background:var(--amber-bg);color:#92400E;border:2px solid var(--amber-soft);display:inline-block;padding:5px 14px;border-radius:99px;font-weight:800;font-size:12px;">Not Yet Processed</span></div></div>
+        </div>
+      </div>
+      <div class="rec-foot">
+        <button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button>
+        ${currentRole==='officer'?`<button class="rec-btn" style="background:var(--navy);color:#fff;border:2px solid var(--navy);font-size:12px;padding:9px 18px;border-radius:9px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="closeModal();openRequisitionPanel()">📤 Submit Requisition</button>`:''}
+      </div>
+    </div>
+  </div>`;
 }
 
 // Step 1: Preface click → go to dashboard → filter to show record in table
