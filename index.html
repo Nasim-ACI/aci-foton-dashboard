@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FOTON-ACI MOTORS — Ownership Papers Database</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -505,7 +505,82 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
 .mob-lbl{font-size:9px;color:rgba(255,255,255,0.5);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 @media(max-width:768px){.mob-nav{display:block;}.sidebar{display:none!important;}}
 @media(min-width:769px){.mob-nav{display:none!important;}}
+
+/* ══ ANDROID / MOBILE OPTIMIZATIONS ══ */
+button,.tbtn,.lock-btn,.ff-search-btn,.mgr-btn,.role-tab,.ff-req-item,.mgr-req-item,.adm-filter-btn,.pf-res-item,.ff-vehicle-card,.pf-leg{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.lock-btn{min-height:50px;}
+.role-tab{min-height:44px;}
+.ff-search-btn{min-height:48px;min-width:80px;}
+.mgr-btn{min-height:44px;}
+.rec-btn{min-height:44px;padding:10px 20px;}
+.skel{background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);background-size:200% 100%;animation:skel-anim 1.2s infinite;border-radius:6px;}
+@keyframes skel-anim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-line{height:14px;margin-bottom:8px;}
+@media(max-width:768px){
+  .lock-input,.ff-search-input,.remark-input,.ff-remarks-input,.adm-search{font-size:16px!important;}
+  .lock-wrap{padding:24px 18px;border-radius:16px;}
+  .role-tab{font-size:12px;padding:10px 4px;}
+  .ff-req-item,.mgr-req-item{padding:16px 15px;}
+  .pf-res-item{padding:14px;}
+  .ff-card-val{font-size:28px;}
+  .mgr-btn{padding:12px;font-size:13px;}
+  .ff-req-submit-btn{padding:14px;font-size:14px;}
+  .rec-foot{flex-direction:column;gap:8px;}
+  .rec-btn{width:100%;}
+  .rec-box{max-height:92vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;margin:0;}
+  .ov{align-items:flex-end;padding:0;}
+  .rec-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .ff-body{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+  .ff-search-box{position:sticky;top:0;z-index:10;border-radius:0;border-left:none;border-right:none;margin-bottom:0;}
+  .adm-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .adm-table th,.adm-table td{white-space:nowrap;}
+  .adm-kpis{grid-template-columns:1fr 1fr;}
+  .mgr-stats{grid-template-columns:repeat(3,1fr);}
+}
+
+/* ══ REQUISITION TRACKING ══ */
+.req-track{padding:16px 0;margin-bottom:8px;}
+.req-track-steps{display:flex;align-items:center;justify-content:space-between;position:relative;padding:0 8px;}
+.req-track-steps::before{content:'';position:absolute;top:18px;left:8px;right:8px;height:3px;background:var(--border);z-index:0;}
+.req-track-progress{position:absolute;top:18px;left:8px;height:3px;background:var(--blue);z-index:1;transition:width .4s ease;}
+.req-track-step{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:2;flex:1;}
+.req-track-dot{width:36px;height:36px;border-radius:50%;border:3px solid var(--border);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .3s;}
+.req-track-dot.done{background:var(--blue);border-color:var(--blue);}
+.req-track-dot.current{background:var(--white);border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-bg);}
+.req-track-dot.rejected{background:var(--red);border-color:var(--red);}
+.req-track-label{font-size:9px;font-weight:700;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:.5px;max-width:60px;line-height:1.3;}
+.req-track-label.active{color:var(--blue);font-weight:800;}
+.req-track-label.rejected{color:var(--red);}
+.req-track-date{font-size:9px;color:var(--text3);text-align:center;}
+
+/* ══ WORKING DAY COUNTDOWN ══ */
+.wd-countdown{border-radius:12px;padding:12px 14px;margin-top:10px;display:flex;align-items:center;gap:12px;}
+.wd-countdown.ok{background:var(--mint-bg);border:1.5px solid var(--mint-soft);}
+.wd-countdown.warn{background:#FEF3C7;border:1.5px solid #FCD34D;}
+.wd-countdown.urgent{background:var(--red-bg);border:1.5px solid var(--red-soft);}
+.wd-countdown.expired{background:var(--red-bg);border:1.5px solid var(--red-soft);}
+.wd-icon{font-size:24px;flex-shrink:0;}
+.wd-info{flex:1;}
+.wd-days{font-size:20px;font-weight:800;line-height:1;}
+.wd-days.ok{color:#065F46;}
+.wd-days.warn{color:#92400E;}
+.wd-days.urgent{color:var(--red);}
+.wd-days.expired{color:var(--red);}
+.wd-label{font-size:11px;font-weight:600;color:var(--text2);margin-top:2px;}
+.wd-bar-wrap{height:6px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;}
+.wd-bar-fill{height:100%;border-radius:99px;transition:width .4s;}
 </style>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0F1E38">
+
+  <!-- ═══ SECURITY PROTECTION LAYER ═══ -->
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="copyright" content="ACI Motors Ltd. All Rights Reserved. Unauthorized access prohibited.">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, private">
+  <meta http-equiv="Pragma" content="no-cache">
 </head>
 <body>
 
@@ -528,11 +603,11 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
     <div class="lock-success" id="lockSuccess"></div>
     <div class="lock-field">
       <label class="lock-field-label" id="loginIdLabel">Staff ID</label>
-      <input class="lock-input" type="text" id="loginId" placeholder="Enter your Staff ID" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()" autocomplete="off"/>
+      <input class="lock-input" type="text" id="loginId" placeholder="Enter your Staff ID" inputmode="numeric" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()" autocomplete="off"/>
     </div>
     <div class="lock-field">
       <label class="lock-field-label">Password</label>
-      <input class="lock-input" type="password" id="loginPw" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off"/>
+      <input class="lock-input" type="password" id="loginPw" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="off"/>
       <span class="lock-eye" id="lockEye" onclick="toggleEye()">👁</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -603,7 +678,7 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
         <div class="pf-card-sub">Type a code, name or reg. no — click result to go to Dashboard</div>
         <div class="pf-srch-box">
           <span class="pf-srch-icon">⌕</span>
-          <input id="pfSearchInput" placeholder="Code, name, registration, engine..." oninput="pfDoSearch()" onkeydown="if(event.key==='Escape'){this.value='';pfDoSearch();}" autocomplete="off"/>
+          <input id="pfSearchInput" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" placeholder="Code, name, registration, engine..." oninput="pfDoSearch()" onkeydown="if(event.key==='Escape'){this.value='';pfDoSearch();}" autocomplete="off"/>
         </div>
         <div id="pfResults" class="pf-srch-results" style="display:none;"></div>
         <div id="pfNoRes" class="pf-srch-nores" style="display:none;">No records found.</div>
@@ -661,53 +736,6 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
   </div>
 </div>
 
-  <!-- ADMIN REQUISITION PANEL -->
-  <div id="adminReqPanel">
-    <div class="adm-header">
-      <div class="adm-title">📋 Requisition Management</div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <select class="adm-month-select" id="admMonthSelect" onchange="filterAdmRequisitions()">
-          <option value="all">All Time</option>
-          <option value="0">January</option><option value="1">February</option>
-          <option value="2">March</option><option value="3">April</option>
-          <option value="4">May</option><option value="5">June</option>
-          <option value="6">July</option><option value="7">August</option>
-          <option value="8">September</option><option value="9">October</option>
-          <option value="10">November</option><option value="11">December</option>
-        </select>
-        <button class="adm-export-btn" onclick="exportAdmRequisitions()">📥 Export Excel</button>
-      </div>
-    </div>
-    <div class="adm-kpis">
-      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiTotal">0</div><div class="adm-kpi-lbl">Total Submitted</div></div>
-      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiPending" style="color:var(--amber);">0</div><div class="adm-kpi-lbl">Pending</div></div>
-      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiApproved" style="color:var(--blue);">0</div><div class="adm-kpi-lbl">Mgr Approved</div></div>
-      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiCompleted" style="color:var(--mint);">0</div><div class="adm-kpi-lbl">Completed</div></div>
-    </div>
-    <div class="adm-filters">
-      <button class="adm-filter-btn active" id="admFAll" onclick="setAdmFilter('All')">All</button>
-      <button class="adm-filter-btn" id="admFPending" onclick="setAdmFilter('Pending')">Pending</button>
-      <button class="adm-filter-btn" id="admFApproved" onclick="setAdmFilter('Manager Approved')">Mgr Approved</button>
-      <button class="adm-filter-btn" id="admFProcessing" onclick="setAdmFilter('Admin Processing')">Processing</button>
-      <button class="adm-filter-btn" id="admFCompleted" onclick="setAdmFilter('Completed')">Completed</button>
-      <button class="adm-filter-btn" id="admFRejected" onclick="setAdmFilter('Rejected')">Rejected</button>
-      <input class="adm-search" type="text" id="admSearchInput" placeholder="Search by code, officer, ID..." oninput="filterAdmRequisitions()"/>
-    </div>
-    <div class="adm-table-wrap">
-      <table class="adm-table">
-        <thead><tr>
-          <th>Req ID</th><th>Vehicle Code</th><th>Officer</th>
-          <th>Territory</th><th>Date</th><th>Status</th>
-          <th>Mgr Remark</th><th>Action</th>
-        </tr></thead>
-        <tbody id="admReqTableBody">
-          <tr><td colspan="8" class="adm-empty">Loading requisitions...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-
 
 <!-- FIELD FORCE HOME -->
 <div id="ffHome">
@@ -741,7 +769,7 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
     <div class="ff-search-box">
       <div class="ff-section-title" style="margin-bottom:10px;">🔍 Search Vehicle</div>
       <div class="ff-search-row">
-        <input class="ff-search-input" type="text" id="ffSearchInput" placeholder="Enter vehicle code (e.g. B00133)" maxlength="20" onkeydown="if(event.key==='Enter')ffSearchVehicle()"/>
+        <input class="ff-search-input" type="text" id="ffSearchInput" placeholder="Enter vehicle code (e.g. B00133)" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" maxlength="20" onkeydown="if(event.key==='Enter')ffSearchVehicle()"/>
         <button class="ff-search-btn" id="ffSearchBtn" onclick="ffSearchVehicle()">Search</button>
       </div>
       <div class="ff-search-result" id="ffSearchResult"></div>
@@ -772,7 +800,7 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
     <div class="ff-search-box" style="margin-bottom:14px;">
       <div class="ff-section-title" style="margin-bottom:10px;">🔍 Check Vehicle Status</div>
       <div class="ff-search-row">
-        <input class="ff-search-input" type="text" id="mgrSearchInput" placeholder="Enter any vehicle code" maxlength="20" onkeydown="if(event.key==='Enter')mgrSearchVehicle()"/>
+        <input class="ff-search-input" type="text" id="mgrSearchInput" placeholder="Enter any vehicle code" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" maxlength="20" onkeydown="if(event.key==='Enter')mgrSearchVehicle()"/>
         <button class="ff-search-btn" id="mgrSearchBtn" onclick="mgrSearchVehicle()">Search</button>
       </div>
       <div class="ff-search-result" id="mgrSearchResult"></div>
@@ -918,7 +946,70 @@ tbody td{padding:9px;color:var(--navy);white-space:nowrap;overflow:hidden;text-o
 
 <div id="modalArea"></div>
 
+<!-- ADMIN REQUISITION PANEL — Full screen -->
+<div id="adminReqPanel" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);overflow-y:auto;">
+  <!-- Top bar -->
+  <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--white);border-bottom:2px solid var(--border);box-shadow:var(--shadow);position:sticky;top:0;z-index:10;flex-wrap:wrap;">
+    <button onclick="hideAdminReqPanel()" style="background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;color:var(--navy);display:flex;align-items:center;gap:6px;touch-action:manipulation;">← Back</button>
+    <div style="font-size:16px;font-weight:800;color:var(--navy);flex:1;">📋 Requisition Management</div>
+    <button class="adm-export-btn" onclick="exportAdmRequisitions()">📥 Export</button>
+  </div>
+
+  <div style="padding:16px;max-width:1100px;margin:0 auto;">
+    <!-- Month filter -->
+    <div style="margin-bottom:14px;">
+      <select class="adm-month-select" id="admMonthSelect" onchange="filterAdmRequisitions()" style="width:100%;max-width:200px;">
+        <option value="all">All Time</option>
+        <option value="0">January</option><option value="1">February</option>
+        <option value="2">March</option><option value="3">April</option>
+        <option value="4">May</option><option value="5">June</option>
+        <option value="6">July</option><option value="7">August</option>
+        <option value="8">September</option><option value="9">October</option>
+        <option value="10">November</option><option value="11">December</option>
+      </select>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="adm-kpis" style="margin-bottom:16px;">
+      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiTotal">0</div><div class="adm-kpi-lbl">Total</div></div>
+      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiPending" style="color:var(--amber);">0</div><div class="adm-kpi-lbl">Pending</div></div>
+      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiApproved" style="color:var(--blue);">0</div><div class="adm-kpi-lbl">Mgr Approved</div></div>
+      <div class="adm-kpi"><div class="adm-kpi-val" id="admKpiCompleted" style="color:var(--mint);">0</div><div class="adm-kpi-lbl">Completed</div></div>
+    </div>
+
+    <!-- Status filters -->
+    <div class="adm-filters" style="margin-bottom:12px;">
+      <button class="adm-filter-btn active" id="admFAll"        onclick="setAdmFilter('All')">All</button>
+      <button class="adm-filter-btn" id="admFPending"           onclick="setAdmFilter('Pending')">Pending</button>
+      <button class="adm-filter-btn" id="admFApproved"          onclick="setAdmFilter('Manager Approved')">Mgr Approved</button>
+      <button class="adm-filter-btn" id="admFProcessing"        onclick="setAdmFilter('Admin Processing')">Processing</button>
+      <button class="adm-filter-btn" id="admFCompleted"         onclick="setAdmFilter('Completed')">Completed</button>
+      <button class="adm-filter-btn" id="admFRejected"          onclick="setAdmFilter('Rejected')">Rejected</button>
+    </div>
+
+    <!-- Search -->
+    <input class="adm-search" type="text" id="admSearchInput" placeholder="Search by code, officer, ID..." oninput="filterAdmRequisitions()" inputmode="search" style="width:100%;margin-bottom:14px;box-sizing:border-box;"/>
+
+    <!-- Table -->
+    <div class="adm-table-wrap">
+      <table class="adm-table">
+        <thead><tr>
+          <th>Req ID</th><th>Vehicle Code</th><th>Officer</th>
+          <th>Territory</th><th>Date</th><th>Status</th>
+          <th>Mgr Remark</th><th>Action</th>
+        </tr></thead>
+        <tbody id="admReqTableBody">
+          <tr><td colspan="8" class="adm-empty">Loading requisitions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
 <script>
+
+
 // ── SECURE CONFIG ──────────────────────────────────────────────────────────
 var _k='FOTONDASH';function _d(a){var r='';for(var i=0;i<a.length;i++)r+=String.fromCharCode(a[i]^_k.charCodeAt(i%_k.length));return r;}
 var _e0=[46,59,32,63,61,126,110,124,59,37,61,61,63,58,106,38,60,39,33,35,49,97,45,43,44,124,37,39,44,38,32,61,107,50,124,9,13,41,45,44,44,61,45,17,10,28,42,54,53,22,52,118,41,63,127,121,31,55,1,47,49,38,36,127,30,35,34,124,54,25,37,1,15,123,34,35,0,117,49,35,43,118,14,26,1,24,27,30,98,32,127,10,103,23,40,38,34,61,29,23,22,27,2,22,43,112,43,103,35,55,49,44];
@@ -1755,7 +1846,8 @@ function printRec(ai){
   </div>
   <div class="footer">FOTON-ACI Motors Ownership Papers Database — Confidential</div>
   <script>window.onload=function(){window.print()}<\/script>
-  </body></html>`);
+  
+</body></html>`);
   w.document.close();
 }
 
@@ -1922,18 +2014,28 @@ let SESSION = null;
 
 function saveSession(data){
   SESSION = data;
+  // Store session token separately for security
+  if(data.sessionToken){
+    sessionStorage.setItem('aci_stoken', data.sessionToken);
+    delete data.sessionToken; // don't store token in main session object
+  }
   sessionStorage.setItem('aci_session', JSON.stringify(data));
+}
+function getSessionToken(){
+  return sessionStorage.getItem('aci_stoken') || '';
 }
 function loadSession(){
   try{
-    const s = sessionStorage.getItem('aci_session');
-    if(s){ SESSION = JSON.parse(s); return true; }
-  }catch(e){ sessionStorage.removeItem('aci_session'); }
+    var s = sessionStorage.getItem('aci_session');
+    var t = sessionStorage.getItem('aci_stoken');
+    if(s && t){ SESSION = JSON.parse(s); return true; }
+  }catch(e){ sessionStorage.removeItem('aci_session'); sessionStorage.removeItem('aci_stoken'); }
   return false;
 }
 function clearSession(){
   SESSION = null;
   sessionStorage.removeItem('aci_session');
+  sessionStorage.removeItem('aci_stoken');
 }
 
 // ── ROLE TAB SWITCHER ─────────────────────────────────────────────────────────
@@ -2002,6 +2104,11 @@ async function doLogin(){
     showLoginErr('Too many failed attempts. Contact your administrator.');
     return;
   }
+
+  // Instant visual feedback
+  document.getElementById('loginBtnTxt').textContent = 'Verifying...';
+  document.getElementById('loginSpinner').style.display = 'block';
+  document.getElementById('loginBtn').disabled = true;
 
   // Save credentials if remember me checked
   var rememberMe = document.getElementById('rememberMe').checked;
@@ -2103,12 +2210,17 @@ function authFetch(url, params){
   return new Promise((res, rej)=>{
     const cb = 'authcb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
     const s = document.createElement('script');
-    const t = setTimeout(()=>{ cleanup(); rej(new Error('Login timed out. Please try again.')); }, 15000);
+    const t = setTimeout(()=>{ cleanup(); rej(new Error('Login timed out. Please try again.')); }, 20000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s); }
     window[cb] = d=>{ cleanup(); res(d); };
-    s.onerror = ()=>{ cleanup(); rej(new Error('Could not reach auth server.')); };
-    const qs = Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
-    s.src = url + '?' + qs + '&token=' + TOKEN + '&callback=' + cb;
+    s.onerror = ()=>{ cleanup(); rej(new Error('Connection error. Check your internet and try again.')); };
+    // Remove token from params - we handle it separately below
+    var cleanParams = Object.assign({}, params);
+    delete cleanParams.token;
+    const qs = Object.entries(cleanParams).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+    // Use session token for all requests except login and ping
+    var useToken = (params.action === 'login' || params.action === 'ping') ? TOKEN : getSessionToken();
+    s.src = url + '?' + qs + '&token=' + encodeURIComponent(useToken) + '&callback=' + cb;
     document.head.appendChild(s);
   });
 }
@@ -2118,6 +2230,11 @@ function onLoginSuccess(session){
   document.getElementById('lockScreen').style.display='none';
   document.getElementById('lockErr').style.display='none';
   document.getElementById('lockAtt').style.display='none';
+
+  // Preload Sheet1 in background for faster subsequent searches
+  if(!all || !all.length){
+    jsonpFetch(SHEET1_URL).then(function(d){ if(Array.isArray(d)) all=d; }).catch(function(){});
+  }
 
   if(session.role === 'admin'){
     // Admin goes to existing preface + full dashboard
@@ -2318,10 +2435,22 @@ function showFFToast(msg){
 
 // ── LOAD & RENDER REQUISITIONS ───────────────────────────────────────────────────────────────────
 async function loadFFRequisitions(){
-  document.getElementById('ffReqList').innerHTML='<div class="ff-empty">Loading...</div>';
+  document.getElementById('ffReqList').innerHTML=
+    '<div style="padding:14px;">' +
+    '<div class="skel skel-line medium"></div><div class="skel skel-line short"></div>' +
+    '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
+    '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
+    '</div>';
   try{
-    const result = await authFetch(AUTH_URL,{action:'getMyRequisitions',token:TOKEN,staffId:SESSION.staffId});
-    ffRequisitions = (result.rows||[]).reverse();
+    // Load Sheet1 and requisitions in PARALLEL for speed
+    var results = await Promise.all([
+      authFetch(AUTH_URL,{action:'getMyRequisitions',token:TOKEN,staffId:SESSION.staffId}),
+      (!all||!all.length) ? jsonpFetch(SHEET1_URL) : Promise.resolve(all)
+    ]);
+    var reqResult = results[0];
+    var sheet1Data = results[1];
+    if(Array.isArray(sheet1Data)) all = sheet1Data;
+    ffRequisitions = (reqResult.rows||[]).reverse();
     renderFFRequisitions();
   }catch(e){
     document.getElementById('ffReqList').innerHTML='<div class="ff-empty">Could not load. Check connection.</div>';
@@ -2346,6 +2475,16 @@ function renderFFRequisitions(){
     var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
     var bc   = statusBadgeClass(r['Status']||'Pending');
     var rmk  = r['ManagerRemark'] ? '<span>' + r['ManagerRemark'] + '</span>' : '';
+        var cdHTML = '';
+    if(r['Status']==='Manager Approved'||r['Status']==='Admin Processing'){
+      var approvedDate2 = new Date(r['LastUpdated']||r['SubmissionDate']||'');
+      if(!isNaN(approvedDate2.getTime())){
+        var elapsed2  = countWorkingDays(approvedDate2, new Date());
+        var remaining2 = Math.max(TOTAL_WD - elapsed2, 0);
+        var cdColor2 = remaining2 > 10 ? '#059669' : remaining2 > 5 ? '#D97706' : '#DC2626';
+        cdHTML = '<span style="font-size:10px;font-weight:700;color:'+cdColor2+';background:'+cdColor2+'15;padding:2px 7px;border-radius:99px;margin-left:4px;">⏱ '+remaining2+'d left</span>';
+      }
+    }
     var html = '<div class="ff-req-item" onclick="showReqDetail(window._reqMap[' + i + '])">';
     html += '<div class="ff-req-top">';
     html += '<div class="ff-req-id">' + (r['RequisitionId']||'-') + '</div>';
@@ -2409,118 +2548,163 @@ function statusBadgeClass(s){
   return 'rs-pending';
 }
 
-function showReqDetail(rStr){
-  const r = typeof rStr==='string' ? JSON.parse(rStr) : rStr;
-  const date    = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleString('en-GB') : '—';
-  const updated = r['LastUpdated']    ? new Date(r['LastUpdated']).toLocaleString('en-GB')    : '—';
-  const bc = statusBadgeClass(r['Status']||'Pending');
-  const mgrRmk = r['ManagerRemark'] ?
-    '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-bottom:10px;">'+
-    '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Manager Remark</div>'+
-    '<div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>' : '';
-  const admRmk = r['AdminRemark'] ?
-    '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:12px;">'+
-    '<div style="font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;margin-bottom:4px;">Notes</div>'+
-    '<div style="font-size:13px;color:var(--navy);">'+r['AdminRemark']+'</div></div>' : '';
 
-  const ovCls2 = 'ov';
-  document.getElementById('modalArea').innerHTML =
-    '<div class="'+ovCls2+'" onclick="if(event.target===this)closeModal()">' +
-    '<div class="rec-box"><div class="rec-head"><div class="rec-head-title">Requisition Detail</div>' +
-    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
-    '<div class="rec-body" style="padding:18px;">' +
-    '<div style="text-align:center;margin-bottom:16px;"><span class="req-status '+bc+'" style="font-size:12px;padding:6px 16px;">'+(r['Status']||'Pending')+'</span></div>' +
-    '<div class="req-detail-grid">' +
-    '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'—')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'—')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">'+(r['Territory']||'—')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">'+date+'</div></div>' +
-    '</div>'+mgrRmk+admRmk+
-    '</div><div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
+
+// ── WORKING DAY COUNTDOWN (Bangladesh: Fri & Sat = holiday) ──────────────────
+var TOTAL_WD = 20; // total working days allowed
+
+function isBDWorkingDay(date){
+  var day = date.getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  return day !== 5 && day !== 6; // Friday=5 and Saturday=6 are holidays
+}
+
+function countWorkingDays(fromDate, toDate){
+  var count = 0;
+  var d = new Date(fromDate);
+  d.setHours(0,0,0,0);
+  var end = new Date(toDate);
+  end.setHours(0,0,0,0);
+  while(d <= end){
+    if(isBDWorkingDay(d)) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function addWorkingDays(fromDate, days){
+  var d = new Date(fromDate);
+  var added = 0;
+  while(added < days){
+    d.setDate(d.getDate() + 1);
+    if(isBDWorkingDay(d)) added++;
+  }
+  return d;
+}
+
+function buildCountdownHTML(r){
+  // Only show countdown for Manager Approved, Admin Processing stages
+  var status = r['Status'] || '';
+  if(status === 'Pending' || status === 'Rejected' || status === 'Completed') return '';
+
+  // Use LastUpdated as the Manager Approved date
+  // (when status changed to Manager Approved)
+  var approvedDateStr = r['LastUpdated'] || r['SubmissionDate'];
+  if(!approvedDateStr) return '';
+
+  var approvedDate = new Date(approvedDateStr);
+  if(isNaN(approvedDate.getTime())) return '';
+
+  var today = new Date();
+  today.setHours(23,59,59,0);
+
+  // Count working days elapsed since approval
+  var elapsed  = countWorkingDays(approvedDate, today);
+  var remaining = TOTAL_WD - elapsed;
+  if(remaining < 0) remaining = 0;
+
+  // Deadline date
+  var deadline = addWorkingDays(approvedDate, TOTAL_WD);
+  var deadlineStr = deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  // Progress
+  var pct  = Math.min(Math.round((elapsed / TOTAL_WD) * 100), 100);
+  var type = remaining > 10 ? 'ok' : remaining > 5 ? 'warn' : remaining > 0 ? 'urgent' : 'expired';
+  var icon = remaining > 10 ? '🟢' : remaining > 5 ? '🟡' : remaining > 0 ? '🔴' : '⛔';
+  var barColor = remaining > 10 ? '#059669' : remaining > 5 ? '#D97706' : '#DC2626';
+
+  var msg = remaining > 0
+    ? '<strong>' + remaining + '</strong> working day' + (remaining===1?'':'s') + ' remaining'
+    : '<strong>Deadline passed!</strong> (' + elapsed + ' working days elapsed)';
+
+  return '<div class="wd-countdown ' + type + '">' +
+    '<div class="wd-icon">' + icon + '</div>' +
+    '<div class="wd-info">' +
+    '<div class="wd-days ' + type + '">' + (remaining > 0 ? remaining : 0) + ' days</div>' +
+    '<div class="wd-label">' + msg + ' · Deadline: ' + deadlineStr + '</div>' +
+    '<div class="wd-bar-wrap"><div class="wd-bar-fill" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
     '</div></div>';
 }
 
-// ── PHASE 3: MANAGER APPROVAL PANEL ─────────────────────────────────────────
+// ── REQUISITION TRACKING ─────────────────────────────────────────────────────
+function buildTrackingHTML(r){
+  var status = r['Status'] || 'Pending';
+  var isRejected = status === 'Rejected';
 
-let mgrRequisitions = [];
-let mgrCurrentFilter = 'Pending';
+  var steps = [
+    { key:'Pending',          label:'Submitted',   icon:'📤' },
+    { key:'Manager Approved', label:'Mgr Approved',icon:'✅' },
+    { key:'Admin Processing', label:'Processing',  icon:'⚙️' },
+    { key:'Completed',        label:'Completed',   icon:'🎉' }
+  ];
 
-// ── MANAGER VEHICLE SEARCH ────────────────────────────────────────────────────
-async function mgrSearchVehicle(){
-  var input  = document.getElementById('mgrSearchInput').value.trim().toUpperCase();
-  var btn    = document.getElementById('mgrSearchBtn');
-  var result = document.getElementById('mgrSearchResult');
-  if(!input){ result.style.display='block'; result.innerHTML='<div class="ff-vehicle-card ineligible"><div class="ff-vehicle-title">Please enter a vehicle code.</div></div>'; return; }
+  var ORDER = ['Pending','Manager Approved','Admin Processing','Completed'];
+  var currentIdx = isRejected ? 0 : ORDER.indexOf(status);
+  if(currentIdx < 0) currentIdx = 0;
 
-  btn.disabled=true; btn.textContent='Searching...';
-  result.style.display='none';
+  // Progress bar width
+  var pct = isRejected ? 0 : Math.round((currentIdx / (steps.length-1)) * 100);
 
-  try{
-    // Search Sheet1
-    var vehicle = null;
-    var s1 = await jsonpFetch(SHEET1_URL);
-    if(s1&&s1.length) vehicle = s1.find(function(r){return (r['Code']||'').toUpperCase()===input;});
-    if(vehicle) vehicle['_src']='sent';
-
-    // Fallback Sheet2
-    if(!vehicle){
-      var s2 = await jsonpFetch(SHEET2_URL);
-      if(s2&&s2.length){
-        var raw = s2.find(function(r){return (r['CustomerCode']||'').toUpperCase()===input;});
-        if(raw){
-          vehicle={};
-          Object.keys(raw).forEach(function(k){vehicle[S2_KEY_MAP[k]||k]=raw[k];});
-          vehicle['_src']='alldata';
-        }
-      }
-    }
-
-    if(!vehicle){
-      result.style.display='block';
-      result.innerHTML='<div class="ff-vehicle-card ineligible"><div class="ff-vehicle-title">Vehicle code <strong>'+input+'</strong> not found.</div></div>';
-      return;
-    }
-
-    // Check requisition status from loaded requisitions
-    var reqStatus = 'No requisition';
-    var reqId     = '';
-    var reqOfficer = '';
-    if(mgrRequisitions && mgrRequisitions.length){
-      var found = mgrRequisitions.find(function(r){ return (r['VehicleCode']||'').toUpperCase()===input; });
-      if(found){ reqStatus=found['Status']; reqId=found['RequisitionId']; reqOfficer=found['OfficerName']||''; }
-    }
-
-    var src = vehicle['_src']==='sent' ? 'Sent Status' : 'All Data';
-    var reqColor = reqStatus==='Pending' ? 'color:var(--amber)' : reqStatus==='Manager Approved'||reqStatus==='Completed' ? 'color:var(--mint)' : reqStatus==='Rejected' ? 'color:var(--red)' : 'color:var(--text3)';
-
-    window._mgrFoundVehicle = vehicle;
-    window._mgrFoundVehicle['_reqStatus']  = reqStatus;
-    window._mgrFoundVehicle['_reqId']      = reqId;
-    window._mgrFoundVehicle['_reqOfficer'] = reqOfficer;
-    result.style.display='block';
-    result.innerHTML =
-      '<div class="ff-vehicle-card eligible" style="cursor:pointer;" onclick="showVehicleDetailPopup(window._mgrFoundVehicle)">' +
-      '<div class="ff-vehicle-title">Vehicle Found — '+input+
-      '<span style="font-size:10px;font-weight:600;color:var(--text3);margin-left:auto;">'+src+'</span></div>' +
-      '<div class="ff-vehicle-rows">' +
-      '<div class="ff-vehicle-row">Customer: <span>'+(vehicle['Customer Name']||'—')+'</span></div>' +
-      '<div class="ff-vehicle-row">Reg No: <span>'+(vehicle['Registration No']||'—')+'</span></div>' +
-      '<div class="ff-vehicle-row">Engine No: <span>'+(vehicle['Engine No']||'—')+'</span></div>' +
-      '<div class="ff-vehicle-row">Status: <span>'+(vehicle['Status']||'—')+'</span></div>' +
-      '</div>' +
-      '<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px;">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Requisition Status</div>' +
-      '<div style="font-size:13px;font-weight:700;'+reqColor+';">'+reqStatus+'</div>' +
-      (reqId ? '<div style="font-size:10px;color:var(--text3);margin-top:2px;">'+reqId+' — '+reqOfficer+'</div>' : '') +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">Tap to view full details →</div>' +
+  var stepsHTML = steps.map(function(step, i){
+    var isDone    = !isRejected && i < currentIdx;
+    var isCurrent = !isRejected && i === currentIdx;
+    var dotClass  = isDone ? 'done' : isCurrent ? 'current' : '';
+    var lblClass  = (isDone || isCurrent) ? 'active' : '';
+    var icon      = isDone ? '✓' : step.icon;
+    return '<div class="req-track-step">' +
+      '<div class="req-track-dot ' + dotClass + '">' + icon + '</div>' +
+      '<div class="req-track-label ' + lblClass + '">' + step.label + '</div>' +
       '</div>';
-  }catch(err){
-    result.style.display='block';
-    result.innerHTML='<div class="ff-vehicle-card ineligible"><div class="ff-vehicle-title">Connection error. Try again.</div></div>';
-  }finally{
-    btn.disabled=false; btn.textContent='Search';
+  }).join('');
+
+  if(isRejected){
+    return '<div class="req-track">' +
+      '<div style="background:var(--red-bg);border:1.5px solid var(--red-soft);border-radius:12px;padding:14px;text-align:center;">' +
+      '<div style="font-size:20px;margin-bottom:6px;">❌</div>' +
+      '<div style="font-size:13px;font-weight:800;color:var(--red);">Requisition Rejected</div>' +
+      (r['ManagerRemark'] ? '<div style="font-size:11px;color:var(--text2);margin-top:6px;">Reason: ' + r['ManagerRemark'] + '</div>' : '') +
+      '</div></div>';
   }
+
+  return '<div class="req-track">' +
+    '<div class="req-track-steps">' +
+    '<div class="req-track-progress" style="width:' + pct + '%;"></div>' +
+    stepsHTML +
+    '</div>' +
+    '</div>';
+}
+
+function showReqDetail(rStr){
+  var r    = typeof rStr==='string' ? JSON.parse(rStr) : rStr;
+  var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+  var bc   = statusBadgeClass(r['Status']||'Pending');
+  var tracking  = buildTrackingHTML(r);
+  var countdown = buildCountdownHTML(r);
+  var mgrRmk = r['ManagerRemark']
+    ? '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Manager Remark</div><div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>'
+    : '';
+  var admRmk = r['AdminRemark']
+    ? '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:12px;margin-top:10px;"><div style="font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;margin-bottom:4px;">Notes</div><div style="font-size:13px;color:var(--navy);">'+r['AdminRemark']+'</div></div>'
+    : '';
+
+  var html = '<div class="ov" onclick="if(event.target===this)closeModal()">';
+  html += '<div class="rec-box"><div class="rec-head">';
+  html += '<div class="rec-head-title">Requisition Status</div>';
+  html += '<button class="rec-close" onclick="closeModal()">X</button></div>';
+  html += '<div class="rec-body" style="padding:16px;">';
+  html += tracking;
+  html += countdown;
+  html += '<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:12px;">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+  html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Req ID</div><div style="font-size:11px;font-weight:700;color:var(--navy);">' + (r['RequisitionId']||'-') + '</div></div>';
+  html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Vehicle Code</div><div style="font-size:14px;font-weight:800;color:var(--blue);">' + (r['VehicleCode']||'-') + '</div></div>';
+  html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Territory</div><div style="font-size:11px;font-weight:600;color:var(--navy);">' + (r['Territory']||'-') + '</div></div>';
+  html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Submitted</div><div style="font-size:11px;font-weight:600;color:var(--navy);">' + date + '</div></div>';
+  html += '</div></div>';
+  html += mgrRmk + admRmk;
+  html += '</div>';
+  html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
+  html += '</div></div>';
+  document.getElementById('modalArea').innerHTML = html;
 }
 
 function loadManagerPanel(){
@@ -2532,7 +2716,11 @@ function loadManagerPanel(){
 }
 
 async function loadMgrRequisitions(){
-  document.getElementById('mgrReqList').innerHTML = '<div class="ff-empty">Loading...</div>';
+  document.getElementById('mgrReqList').innerHTML =
+    '<div style="padding:14px;">' +
+    '<div class="skel skel-line medium"></div><div class="skel skel-line short"></div>' +
+    '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
+    '</div>';
   try{
     const territories = (SESSION.supervisedTerritories||[]).join(',');
     const result = await authFetch(AUTH_URL, {
@@ -2692,62 +2880,45 @@ async function mgrConfirmAction(){
 }
 
 function mgrViewDetail(r){
-  var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleString('en-GB') : '-';
+  var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
   var bc   = statusBadgeClass(r['Status']||'Pending');
-  var rmk  = r['ManagerRemark']
-    ? '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-top:12px;">'+
-      '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Your Remark</div>'+
-      '<div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>' : '';
+  var countdown = buildCountdownHTML(r);
+  var rmk = r['ManagerRemark']
+    ? '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-top:12px;"><div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Your Remark</div><div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>'
+    : '';
 
-  document.getElementById('modalArea').innerHTML =
-    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
-    '<div class="rec-box"><div class="rec-head"><div class="rec-head-title">Requisition Detail</div>' +
-    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
-    '<div class="rec-body" style="padding:18px;">' +
-    '<div style="text-align:center;margin-bottom:14px;"><span class="req-status '+bc+'" style="font-size:12px;padding:6px 16px;">'+(r['Status']||'Pending')+'</span></div>' +
-    '<div class="req-detail-grid">' +
-    '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Officer</div><div class="req-detail-value">'+(r['OfficerName']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Staff ID</div><div class="req-detail-value">'+(r['StaffId']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">'+(r['Territory']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">'+date+'</div></div>' +
-    '</div>'+rmk+
-    '</div><div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
-    '</div></div>';
+  var html = '<div class="ov" onclick="if(event.target===this)closeModal()">';
+  html += '<div class="rec-box"><div class="rec-head">';
+  html += '<div class="rec-head-title">Requisition Detail</div>';
+  html += '<button class="rec-close" onclick="closeModal()">X</button></div>';
+  html += '<div class="rec-body" style="padding:18px;">';
+  html += '<div style="text-align:center;margin-bottom:14px;">';
+  html += '<span class="req-status ' + bc + '" style="font-size:12px;padding:6px 16px;">' + (r['Status']||'Pending') + '</span>';
+  html += '</div>';
+  html += countdown;
+  html += '<div class="req-detail-grid">';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">' + (r['RequisitionId']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">' + (r['VehicleCode']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Officer</div><div class="req-detail-value">' + (r['OfficerName']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Staff ID</div><div class="req-detail-value">' + (r['StaffId']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
+  html += '</div>' + rmk;
+  html += '</div>';
+  html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
+  html += '</div></div>';
+  document.getElementById('modalArea').innerHTML = html;
 }
 
-// ── PHASE 4: ADMIN REQUISITION PANEL ─────────────────────────────────────────
-
-var admAllRequisitions  = [];
-var admCurrentFilter    = 'All';
-var admCurrentSearch    = '';
-
 function showAdminReqPanel(){
-  // Hide main table, show admin panel
-  var mainContent = document.querySelector('.main-content');
-  var tbl = document.getElementById('tableWrap');
-  var flt = document.querySelector('.filter-bar');
-  var pg  = document.getElementById('pgBar');
-  if(tbl) tbl.style.display='none';
-  if(flt) flt.style.display='none';
-  if(pg)  pg.style.display='none';
-  document.getElementById('adminReqPanel').classList.add('active');
-  // Update sidebar active state
-  document.querySelectorAll('.sb-item').forEach(function(el){ el.classList.remove('active'); });
-  document.getElementById('sbReqItem').classList.add('active');
-  // Load requisitions
+  document.getElementById('adminReqPanel').style.display='block';
+  document.body.style.overflow='hidden';
   loadAdmRequisitions();
 }
 
 function hideAdminReqPanel(){
-  document.getElementById('adminReqPanel').classList.remove('active');
-  var tbl = document.getElementById('tableWrap');
-  var flt = document.querySelector('.filter-bar');
-  var pg  = document.getElementById('pgBar');
-  if(tbl) tbl.style.display='';
-  if(flt) flt.style.display='';
-  if(pg)  pg.style.display='';
+  document.getElementById('adminReqPanel').style.display='none';
+  document.body.style.overflow='';
 }
 
 async function loadAdmRequisitions(){
@@ -2890,36 +3061,38 @@ async function admUpdateStatus(idx, newStatus){
 }
 
 function admViewDetail(r){
-  var date    = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleString('en-GB') : '-';
-  var updated = r['LastUpdated']    ? new Date(r['LastUpdated']).toLocaleString('en-GB')    : '-';
-  var bc      = statusBadgeClass(r['Status']||'Pending');
-  var mrkMgr  = r['ManagerRemark']
-    ? '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-top:10px;">'+
-      '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Manager Remark</div>'+
-      '<div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>' : '';
-  var mrkAdm  = r['AdminRemark']
-    ? '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:12px;margin-top:10px;">'+
-      '<div style="font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;margin-bottom:4px;">Notes</div>'+
-      '<div style="font-size:13px;color:var(--navy);">'+r['AdminRemark']+'</div></div>' : '';
+  var date   = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+  var updated= r['LastUpdated']    ? new Date(r['LastUpdated']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+  var bc     = statusBadgeClass(r['Status']||'Pending');
+  var countdown = buildCountdownHTML(r);
+  var mrkMgr = r['ManagerRemark']
+    ? '<div style="background:var(--amber-bg);border:1px solid var(--amber-soft);border-radius:10px;padding:12px;margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;margin-bottom:4px;">Manager Remark</div><div style="font-size:13px;color:var(--navy);">'+r['ManagerRemark']+'</div></div>'
+    : '';
+  var mrkAdm = r['AdminRemark']
+    ? '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:12px;margin-top:10px;"><div style="font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;margin-bottom:4px;">Notes</div><div style="font-size:13px;color:var(--navy);">'+r['AdminRemark']+'</div></div>'
+    : '';
 
-  document.getElementById('modalArea').innerHTML =
-    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
-    '<div class="rec-box"><div class="rec-head"><div class="rec-head-title">Requisition Detail</div>' +
-    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
-    '<div class="rec-body" style="padding:18px;">' +
-    '<div style="text-align:center;margin-bottom:14px;"><span class="req-status '+bc+'" style="font-size:12px;padding:6px 16px;">'+(r['Status']||'Pending')+'</span></div>' +
-    '<div class="req-detail-grid">' +
-    '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Officer</div><div class="req-detail-value">'+(r['OfficerName']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Staff ID</div><div class="req-detail-value">'+(r['StaffId']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">'+(r['Territory']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Area</div><div class="req-detail-value">'+(r['Area']||'-')+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">'+date+'</div></div>' +
-    '<div class="req-detail-item"><div class="req-detail-label">Last Updated</div><div class="req-detail-value" style="font-size:11px;">'+updated+'</div></div>' +
-    '</div>'+mrkMgr+mrkAdm+
-    '</div><div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
-    '</div></div>';
+  var html = '<div class="ov" onclick="if(event.target===this)closeModal()">';
+  html += '<div class="rec-box"><div class="rec-head">';
+  html += '<div class="rec-head-title">Requisition Detail</div>';
+  html += '<button class="rec-close" onclick="closeModal()">X</button></div>';
+  html += '<div class="rec-body" style="padding:18px;">';
+  html += '<div style="text-align:center;margin-bottom:14px;">';
+  html += '<span class="req-status ' + bc + '" style="font-size:12px;padding:6px 16px;">' + (r['Status']||'Pending') + '</span>';
+  html += '</div>';
+  html += countdown;
+  html += '<div class="req-detail-grid">';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">' + (r['RequisitionId']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">' + (r['VehicleCode']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Officer</div><div class="req-detail-value">' + (r['OfficerName']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Staff ID</div><div class="req-detail-value">' + (r['StaffId']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
+  html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
+  html += '</div>' + mrkMgr + mrkAdm;
+  html += '</div>';
+  html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
+  html += '</div></div>';
+  document.getElementById('modalArea').innerHTML = html;
 }
 
 function exportAdmRequisitions(){
@@ -2979,6 +3152,18 @@ function logout(){
 
 // ── RESTORE SESSION ON PAGE LOAD ──────────────────────────────────────────────
 window.onload = function(){
+  // Warm up Apps Script silently after 2 seconds
+  setTimeout(function(){
+    try{
+      var s=document.createElement('script');
+      window._warmup=function(){};
+      s.onerror=function(){if(s.parentNode)s.parentNode.removeChild(s);};
+      s.src=AUTH_URL+'?action=ping&token='+TOKEN+'&callback=_warmup&_='+Date.now();
+      document.head.appendChild(s);
+      setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},5000);
+    }catch(e){}
+  }, 2000);
+
   if(loadSession() && SESSION){
     onLoginSuccess(SESSION);
   } else {
@@ -2996,6 +3181,35 @@ window.onload = function(){
     }
   }
 };
+
+
+</script>
+<script>
+(function(){
+  document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
+  document.addEventListener('selectstart',function(e){e.preventDefault();return false;});
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey&&['c','a','s','u','p','i','j'].includes(e.key.toLowerCase())){e.preventDefault();return false;}
+    if(e.key==='F12'){e.preventDefault();return false;}
+    if(e.ctrlKey&&e.shiftKey&&['i','j','c','k'].includes(e.key.toLowerCase())){e.preventDefault();return false;}
+  });
+  document.addEventListener('dragstart',function(e){e.preventDefault();return false;});
+  var devOpen=false;
+  setInterval(function(){
+    if(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160){
+      if(!devOpen){
+        devOpen=true;
+        document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0F1E38;flex-direction:column;gap:16px;"><div style="font-size:48px;">🔒</div><div style="color:#fff;font-size:18px;font-weight:800;font-family:Inter,sans-serif;">Access Restricted</div><div style="color:rgba(255,255,255,0.5);font-size:13px;font-family:Inter,sans-serif;">Developer tools are not permitted.</div><button onclick="window.location.reload()" style="margin-top:12px;padding:10px 24px;background:#2563EB;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Close DevTools and Reload</button></div>';
+      }
+    }else{devOpen=false;}
+  },1000);
+  var style=document.createElement('style');
+  style.textContent='*{-webkit-user-select:none!important;-moz-user-select:none!important;user-select:none!important;}input,textarea{-webkit-user-select:text!important;-moz-user-select:text!important;user-select:text!important;}';
+  document.head.appendChild(style);
+  // iframe check disabled - causes false positive in some browsers
+})();
+
+
 </script>
 </body>
 </html>
