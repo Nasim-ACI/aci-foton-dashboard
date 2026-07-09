@@ -569,6 +569,67 @@ button,.tbtn,.lock-btn,.ff-search-btn,.mgr-btn,.role-tab,.ff-req-item,.mgr-req-i
 .wd-label{font-size:11px;font-weight:600;color:var(--text2);margin-top:2px;}
 .wd-bar-wrap{height:6px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden;}
 .wd-bar-fill{height:100%;border-radius:99px;transition:width .4s;}
+
+/* ══ SPEED + MOBILE SMOOTH ══ */
+/* Hardware acceleration for all transitions */
+*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+.ff-req-item,.mgr-req-item,.pf-res-item,.ff-vehicle-card,.pf-leg{
+  will-change:transform;
+  transform:translateZ(0);
+}
+/* Smooth scrolling everywhere */
+html{scroll-behavior:smooth;}
+body,.ff-body,.rec-body,.ff-req-list,.mgr .ff-req-list,.adm-table-wrap{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+/* Instant tap response */
+button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-filter-btn{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+/* Smooth button press feedback */
+.lock-btn:active,.ff-search-btn:active,.ff-req-submit-btn:active,
+.mgr-btn:active,.rec-btn:active,.adm-action-btn:active{
+  transform:scale(0.97);
+  transition:transform 0.1s;
+}
+/* Loading state */
+.loading-pulse{animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+/* Smooth modal animation */
+.ov{animation:fadeIn 0.15s ease;}
+.rec-box{animation:slideUp 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+/* Mobile: sheet-style modal from bottom */
+@media(max-width:768px){
+  .rec-box{animation:sheetUp 0.25s cubic-bezier(0.32,0.72,0,1);}
+  @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+}
+/* Prevent layout shift */
+.ff-card-val,.mgr-stat-val,.adm-kpi-val{min-height:34px;}
+/* Faster search input */
+.ff-search-input,.mgr-search-input,.adm-search{
+  -webkit-appearance:none;
+  appearance:none;
+}
+/* Better touch targets on mobile */
+@media(max-width:768px){
+  .ff-req-item{min-height:72px;display:flex;flex-direction:column;justify-content:center;}
+  .mgr-req-item{min-height:80px;}
+  .role-tab{min-height:46px;font-size:13px;}
+  .lock-btn{min-height:52px;font-size:15px;}
+  .mgr-btn{min-height:46px;font-size:13px;border-radius:12px;}
+  .rec-btn{min-height:48px;font-size:14px;}
+  .adm-filter-btn{min-height:40px;padding:8px 14px;}
+  /* Larger close button */
+  .rec-close{width:36px;height:36px;font-size:16px;}
+  /* Better modal on mobile */
+  .rec-box{border-radius:24px 24px 0 0;margin:0;max-height:95vh;}
+  .ov{padding:0;align-items:flex-end;}
+}
 </style>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2405,19 +2466,22 @@ async function submitRequisition(){
       errEl.textContent=result.error; errEl.style.display='block';
       btn.disabled=false; btn.textContent='Submit';
     } else {
-      ffRequisitions.unshift({
+      var newReq = {
         RequisitionId:reqId, VehicleCode:ffFoundVehicle['_code'],
         StaffId:SESSION.staffId, OfficerName:SESSION.name,
         Territory:SESSION.territory, Area:SESSION.area, AreaCode:SESSION.areaCode,
         SubmissionDate:now.toISOString(), Status:'Pending',
         ManagerRemark:'', AdminRemark:remarks
-      });
+      };
+      ffRequisitions.unshift(newReq);
+      // Update cache
+      try{ sessionStorage.setItem('ff_reqs_'+SESSION.staffId, JSON.stringify(ffRequisitions)); }catch(e){}
       closeModal();
       document.getElementById('ffSearchInput').value='';
       document.getElementById('ffSearchResult').style.display='none';
       ffFoundVehicle=null;
       renderFFRequisitions();
-      showFFToast('Requisition '+reqId+' submitted successfully!');
+      showFFToast('Requisition '+reqId+' submitted!');
     }
   }catch(e){
     errEl.textContent='Connection error. Please try again.';
@@ -2435,25 +2499,37 @@ function showFFToast(msg){
 
 // ── LOAD & RENDER REQUISITIONS ───────────────────────────────────────────────────────────────────
 async function loadFFRequisitions(){
-  document.getElementById('ffReqList').innerHTML=
-    '<div style="padding:14px;">' +
-    '<div class="skel skel-line medium"></div><div class="skel skel-line short"></div>' +
-    '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
-    '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
-    '</div>';
+  // Show cached data instantly if available
+  var cacheKey = 'ff_reqs_' + SESSION.staffId;
+  var cached = sessionStorage.getItem(cacheKey);
+  if(cached){
+    try{
+      ffRequisitions = JSON.parse(cached);
+      renderFFRequisitions();
+    }catch(e){}
+  } else {
+    document.getElementById('ffReqList').innerHTML=
+      '<div style="padding:14px;">' +
+      '<div class="skel skel-line medium"></div><div class="skel skel-line short"></div>' +
+      '<div class="skel skel-line medium" style="margin-top:12px;"></div><div class="skel skel-line short"></div>' +
+      '</div>';
+  }
   try{
-    // Load Sheet1 and requisitions in PARALLEL for speed
+    // Load Sheet1 and requisitions in PARALLEL
     var results = await Promise.all([
       authFetch(AUTH_URL,{action:'getMyRequisitions',token:TOKEN,staffId:SESSION.staffId}),
       (!all||!all.length) ? jsonpFetch(SHEET1_URL) : Promise.resolve(all)
     ]);
-    var reqResult = results[0];
+    var reqResult  = results[0];
     var sheet1Data = results[1];
     if(Array.isArray(sheet1Data)) all = sheet1Data;
     ffRequisitions = (reqResult.rows||[]).reverse();
+    // Cache for next time
+    try{ sessionStorage.setItem(cacheKey, JSON.stringify(ffRequisitions)); }catch(e){}
     renderFFRequisitions();
   }catch(e){
-    document.getElementById('ffReqList').innerHTML='<div class="ff-empty">Could not load. Check connection.</div>';
+    if(!ffRequisitions.length)
+      document.getElementById('ffReqList').innerHTML='<div class="ff-empty">Could not load. Check connection.</div>';
   }
 }
 
@@ -2860,17 +2936,20 @@ async function mgrConfirmAction(){
       errEl.textContent=result.error; errEl.style.display='block';
       btn.disabled=false; btn.textContent=action==='approve'?'Confirm Approve':'Confirm Reject';
     } else {
-      // Update local cache
+      // Update local cache instantly
       mgrRequisitions.forEach(function(req){
         if((req['RequisitionId']||req.RequisitionId)===(r['RequisitionId']||r.RequisitionId)){
-          req['Status']        = newStatus;
-          req['ManagerRemark'] = remark;
+          req['Status']          = newStatus;
+          req['ManagerRemark']   = remark;
           req['ManagerUsername'] = SESSION.username;
+          req['LastUpdated']     = new Date().toISOString();
         }
       });
+      // Update session cache
+      try{ sessionStorage.setItem('mgr_reqs_'+SESSION.username, JSON.stringify(mgrRequisitions)); }catch(e){}
       closeModal();
       renderMgrRequisitions();
-      showFFToast(action==='approve' ? 'Requisition approved successfully!' : 'Requisition rejected.');
+      showFFToast(action==='approve' ? 'Approved!' : 'Rejected.');
     }
   }catch(e){
     errEl.textContent='Connection error. Please try again.';
