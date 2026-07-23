@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FOTON-ACI MOTORS — Ownership Papers Database</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
 :root{
   --bg:#F0F4F8;--white:#FFFFFF;--navy:#0F1E38;--navy2:#1A2E52;
@@ -65,6 +65,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .ff-welcome-meta{font-size:11px;color:rgba(255,255,255,0.55);display:flex;flex-wrap:wrap;gap:10px;}
 .ff-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
 .ff-card{background:var(--white);border-radius:var(--radius);padding:14px;border:2px solid var(--border);box-shadow:var(--shadow);}
+.ff-card.active{border-color:var(--navy);background:var(--bg);}
 .ff-card-val{font-size:26px;font-weight:800;color:var(--navy);}
 .ff-card-lbl{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:2px;}
 .ff-section-title{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;}
@@ -128,6 +129,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .mgr-filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
 .mgr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
 .mgr-stat{background:var(--white);border-radius:var(--radius);padding:12px;border:2px solid var(--border);text-align:center;box-shadow:var(--shadow);}
+.mgr-stat.active{border-color:var(--navy);background:var(--bg);}
 .mgr-stat-val{font-size:22px;font-weight:800;color:var(--navy);}
 .mgr-stat-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
 .remark-input{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--navy);font-family:'Inter',sans-serif;outline:none;resize:vertical;min-height:80px;transition:all .2s;margin-bottom:12px;}
@@ -664,7 +666,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     <div class="lock-success" id="lockSuccess"></div>
     <div class="lock-field">
       <label class="lock-field-label" id="loginIdLabel">Staff ID</label>
-      <input class="lock-input" type="text" id="loginId" placeholder="Enter your Staff ID" inputmode="text" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()" autocomplete="off"/>
+      <input class="lock-input" type="text" id="loginId" placeholder="Enter your Staff ID" inputmode="numeric" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()" autocomplete="off"/>
     </div>
     <div class="lock-field">
       <label class="lock-field-label">Password</label>
@@ -701,6 +703,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       </div>
       <button class="pf-nav-btn" onclick="logout()">🔒 Logout</button>
       <button class="pf-nav-btn prim" onclick="goToDashboard()">Full Dashboard →</button>
+      <button class="pf-nav-btn" onclick="showAdminReqPanelFromPreface()" style="background:var(--blue);color:#fff;border-color:var(--blue);">📋 Requisitions</button>
     </div>
   </div>
 
@@ -794,6 +797,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <div class="pf-fi">Records: <span id="pfRec2">—</span></div>
     </div>
     <button class="pf-proceed" onclick="goToDashboard()">Proceed to Dashboard →</button>
+    <button class="pf-proceed" onclick="showAdminReqPanelFromPreface()" style="background:var(--blue);margin-top:8px;">📋 View Requisitions</button>
   </div>
 </div>
 
@@ -822,10 +826,10 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       </div>
     </div>
     <div class="ff-cards">
-      <div class="ff-card"><div class="ff-card-val" id="ffCardTotal">0</div><div class="ff-card-lbl">My Requisitions</div></div>
-      <div class="ff-card"><div class="ff-card-val" id="ffCardPending" style="color:var(--amber);">0</div><div class="ff-card-lbl">Pending</div></div>
-      <div class="ff-card"><div class="ff-card-val" id="ffCardApproved" style="color:var(--mint);">0</div><div class="ff-card-lbl">Approved</div></div>
-      <div class="ff-card"><div class="ff-card-val" id="ffCardCompleted" style="color:var(--blue);">0</div><div class="ff-card-lbl">Completed</div></div>
+      <div class="ff-card active" id="ffCardBoxTotal" style="cursor:pointer;" onclick="ffSetFilter('All')"><div class="ff-card-val" id="ffCardTotal">0</div><div class="ff-card-lbl">My Requisitions</div></div>
+      <div class="ff-card" id="ffCardBoxPending" style="cursor:pointer;" onclick="ffSetFilter('Pending')"><div class="ff-card-val" id="ffCardPending" style="color:var(--amber);">0</div><div class="ff-card-lbl">Pending</div></div>
+      <div class="ff-card" id="ffCardBoxApproved" style="cursor:pointer;" onclick="ffSetFilter('Approved')"><div class="ff-card-val" id="ffCardApproved" style="color:var(--mint);">0</div><div class="ff-card-lbl">Approved</div></div>
+      <div class="ff-card" id="ffCardBoxCompleted" style="cursor:pointer;" onclick="ffSetFilter('Completed')"><div class="ff-card-val" id="ffCardCompleted" style="color:var(--blue);">0</div><div class="ff-card-lbl">Completed</div></div>
     </div>
     <div class="ff-search-box">
       <div class="ff-section-title" style="margin-bottom:10px;">🔍 Search Vehicle</div>
@@ -867,9 +871,10 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <div class="ff-search-result" id="mgrSearchResult"></div>
     </div>
     <div class="mgr-stats">
-      <div class="mgr-stat"><div class="mgr-stat-val" id="mgrStatTotal">0</div><div class="mgr-stat-lbl">Total</div></div>
-      <div class="mgr-stat"><div class="mgr-stat-val" id="mgrStatPending" style="color:var(--amber);">0</div><div class="mgr-stat-lbl">Pending</div></div>
-      <div class="mgr-stat"><div class="mgr-stat-val" id="mgrStatDone" style="color:var(--mint);">0</div><div class="mgr-stat-lbl">Processed</div></div>
+      <div class="mgr-stat" id="mgrStatBoxTotal" style="cursor:pointer;" onclick="mgrSetFilter('All')"><div class="mgr-stat-val" id="mgrStatTotal">0</div><div class="mgr-stat-lbl">Total</div></div>
+      <div class="mgr-stat active" id="mgrStatBoxPending" style="cursor:pointer;" onclick="mgrSetFilter('Pending')"><div class="mgr-stat-val" id="mgrStatPending" style="color:var(--amber);">0</div><div class="mgr-stat-lbl">Pending</div></div>
+
+      <div class="mgr-stat" id="mgrStatBoxDone" style="cursor:pointer;" onclick="mgrSetFilter('Processed')"><div class="mgr-stat-val" id="mgrStatDone" style="color:var(--mint);">0</div><div class="mgr-stat-lbl">Processed</div></div>
     </div>
     <div class="mgr-filter-row">
       <button class="mgr-filter-btn active" id="mgrFilterPending" onclick="mgrSetFilter('Pending')">Pending</button>
@@ -1075,11 +1080,15 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
 var _k='FOTONDASH';function _d(a){var r='';for(var i=0;i<a.length;i++)r+=String.fromCharCode(a[i]^_k.charCodeAt(i%_k.length));return r;}
 var _e0=[46,59,32,63,61,126,110,124,59,37,61,61,63,58,106,38,60,39,33,35,49,97,45,43,44,124,37,39,44,38,32,61,107,50,124,9,13,41,45,44,44,61,45,17,10,28,42,54,53,22,52,118,41,63,127,121,31,55,1,47,49,38,36,127,30,35,34,124,54,25,37,1,15,123,34,35,0,117,49,35,43,118,14,26,1,24,27,30,98,32,127,10,103,23,40,38,34,61,29,23,22,27,2,22,43,112,43,103,35,55,49,44];
 var _e1=[7,12,29,9,1,16,14,29,122,118,125,98,28,11,7,20,1,13];
-var _e2=[7,12,29,9,1,16,14,29,31,22,11,21,28,6,6,14,18,26,2,125,100,125,120];
-var _e3=[1,14,14,6,0,13,0,9];
+var _e2=[116,125,102,125,124];
+var _e3=[119,126,101,126,127];
 var _e5=[46,59,32,63,61,126,110,124,59,37,61,61,63,58,106,38,60,39,33,35,49,97,45,43,44,124,37,39,44,38,32,61,107,50,124,9,13,41,45,44,44,62,56,10,112,54,30,36,26,124,60,5,98,3,17,119,37,30,23,116,35,26,46,44,28,33,36,41,0,40,7,35,60,58,19,30,42,6,47,61,10,43,126,4,28,121,50,115,106,50,49,30,48,44,123,42,10,54,112,39,121,102,126,6,50,45,1,103,35,55,49,44];
 var _e6=[46,59,32,63,61,126,110,124,59,37,61,61,63,58,106,38,60,39,33,35,49,97,45,43,44,124,37,39,44,38,32,61,107,50,124,9,13,41,45,44,44,51,12,2,34,35,55,12,8,11,62,51,11,9,11,121,27,40,17,44,121,41,56,116,26,18,33,119,12,42,126,13,37,31,44,30,99,16,6,1,26,30,33,45,119,54,35,32,6,57,52,23,21,7,17,37,0,37,1,0,33,35,120,27,3,20,7,103,35,55,49,44];
-var MANAGER_CREDENTIALS={'11111':{password:_d(_e3),name:'Gazi Niaz',territories:[]}};
+// (Client no longer maintains a local MANAGER_CREDENTIALS/ADMIN_USERS copy —
+//  manager and admin passwords are validated server-side only, in Auth.gs)
+// Display-only name lookup for showing a friendly "Approved By" name in the
+// requisition tracking box. Not used for authentication in any way.
+var MGR_DISPLAY_NAMES = { '11111':'Gazi Niaz', '22222':'ASM Kamrul' };
 // ────────────────────────────────────────────────────────────────────────────
 const SHEET1_URL=_d(_e5);
 const SHEET2_URL=_d(_e6);
@@ -2101,6 +2110,30 @@ function clearSession(){
 
 // ── ROLE TAB SWITCHER ─────────────────────────────────────────────────────────
 let currentRole = 'field';
+// Default matches the "Pending" filter button marked active in the HTML.
+// (Previously undeclared — referencing it before any mgrSetFilter() call
+// threw a ReferenceError that was silently caught and shown to the manager
+// as "Could not load requisitions. Check connection." on first login.)
+let mgrCurrentFilter = 'Pending';
+// Field Force "My Requisitions" summary card filter (Total/Pending/Approved/Completed)
+let ffCurrentFilter = 'All';
+// Default matches the "All" filter button marked active in the HTML.
+// (Previously undeclared — reading it before any setAdmFilter() call threw a
+// ReferenceError, silently caught and shown to the admin as "Could not load.
+// Check connection." on every first open of the Requisitions panel.)
+let admCurrentFilter = 'All';
+let admAllRequisitions = [];
+let admCurrentSearch = '';
+let mgrRequisitions = [];
+function ffSetFilter(filter){
+  ffCurrentFilter = filter;
+  var boxMap = { 'All':'ffCardBoxTotal', 'Pending':'ffCardBoxPending', 'Approved':'ffCardBoxApproved', 'Completed':'ffCardBoxCompleted' };
+  Object.keys(boxMap).forEach(function(f){
+    var el = document.getElementById(boxMap[f]);
+    if(el) el.classList.toggle('active', f===filter);
+  });
+  renderFFRequisitions();
+}
 function switchRole(role){
   currentRole = role;
   ['field','manager','admin'].forEach(r=>{
@@ -2183,45 +2216,13 @@ async function doLogin(){
     localStorage.removeItem('aci_saved_pw');
   }
 
-  // --- OFFLINE / LOCAL AUTH for Admin and initial setup ---
-  if(currentRole === 'admin'){
-    // Admin credentials — change these after first login
-    const ADMIN_USERS = {
-      'admin': _d(_e2)
-    };
-    if(ADMIN_USERS[identifier] && ADMIN_USERS[identifier] === password){
-      const sessionData = {
-        role: 'admin',
-        username: identifier,
-        name: 'Administrator',
-        territory: 'All',
-        area: 'All',
-        areaCode: 'ALL',
-        staffId: 'ADMIN',
-        designation: 'Administrator',
-        supervisedTerritories: []
-      };
-      saveSession(sessionData);
-      onLoginSuccess(sessionData);
-      return;
-    } else {
-      loginAttempts++;
-      showLoginErr('Incorrect admin credentials.');
-      if(loginAttempts >= MAX_ATTEMPTS){
-        document.getElementById('loginBtn').disabled=true;
-        showLoginErr('Too many failed attempts. Contact your administrator.');
-      } else {
-        att.textContent = (MAX_ATTEMPTS - loginAttempts) + ' attempt(s) remaining.';
-        att.style.display = 'block';
-      }
-      return;
-    }
-  }
-
-  // --- SERVER AUTH for Field Force and Manager ---
+  // --- SERVER AUTH for Field Force, Manager, and Admin ---
+  // (Admin now authenticates through the same session-issuing server endpoint
+  // as the other roles, so the admin panel gets a real sessionToken and the
+  // Requisitions tab — getAllRequisitions / updateRequisitionStatus — works.)
   if(!AUTH_URL || AUTH_URL.includes('PASTE_AUTH')){
     // AUTH_URL not yet configured — show helpful message
-    showLoginErr('⚠ Auth server not configured yet. Please set AUTH_URL in the code. Use Admin login for now.');
+    showLoginErr('⚠ Auth server not configured yet. Please set AUTH_URL in the code.');
     return;
   }
 
@@ -2267,19 +2268,52 @@ function setLoginLoading(on){
 
 // ── AUTH FETCH — POST via hidden form (JSONP for GET, form post for write) ────
 // For auth we use a simple GET with JSONP (read-only call, no sensitive data stored)
-function authFetch(url, params){
-  return new Promise((res, rej)=>{
-    const cb = 'authcb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
-    const s = document.createElement('script');
-    const t = setTimeout(()=>{ cleanup(); rej(new Error('Login timed out. Please try again.')); }, 20000);
+function authFetch(url, params, _retryCount){
+  _retryCount = _retryCount || 0;
+  return new Promise(function(res, rej){
+    var cb = 'authcb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+    var s  = document.createElement('script');
+    var t  = setTimeout(function(){
+      cleanup();
+      // Auto-retry up to 3 times for timeout (handles concurrent load)
+      if(_retryCount < 3 && params.action !== 'login'){
+        setTimeout(function(){
+          authFetch(url, params, _retryCount + 1).then(res).catch(rej);
+        }, 1000 * (_retryCount + 1)); // exponential backoff: 1s, 2s, 3s
+      } else {
+        rej(new Error(_retryCount > 0 ? 'Server busy. Please try again.' : 'Login timed out. Please try again.'));
+      }
+    }, 20000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode)s.parentNode.removeChild(s); }
-    window[cb] = d=>{ cleanup(); res(d); };
-    s.onerror = ()=>{ cleanup(); rej(new Error('Connection error. Check your internet and try again.')); };
-    // Remove token from params - we handle it separately below
+    window[cb] = function(d){
+      cleanup();
+      // If server says session expired, clear session and redirect to login
+      if(d && d.error && d.error.indexOf('Session expired') >= 0){
+        clearSession();
+        showLoginErr('Session expired. Please login again.');
+        document.getElementById('lockScreen').style.display='flex';
+        ['preface','dashboard','ffHome','mgrHome','adminReqPanel'].forEach(function(id){
+          var el=document.getElementById(id);
+          if(el){el.classList.remove('active');el.style.display='';}
+        });
+        rej(new Error(d.error));
+        return;
+      }
+      res(d);
+    };
+    s.onerror = function(){
+      cleanup();
+      if(_retryCount < 2){
+        setTimeout(function(){
+          authFetch(url, params, _retryCount + 1).then(res).catch(rej);
+        }, 1500 * (_retryCount + 1));
+      } else {
+        rej(new Error('No internet connection. Please check and retry.'));
+      }
+    };
     var cleanParams = Object.assign({}, params);
     delete cleanParams.token;
-    const qs = Object.entries(cleanParams).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
-    // Use session token for all requests except login and ping
+    var qs = Object.entries(cleanParams).map(function(e){return e[0]+'='+encodeURIComponent(e[1]);}).join('&');
     var useToken = (params.action === 'login' || params.action === 'ping') ? TOKEN : getSessionToken();
     s.src = url + '?' + qs + '&token=' + encodeURIComponent(useToken) + '&callback=' + cb;
     document.head.appendChild(s);
@@ -2352,14 +2386,13 @@ async function ffSearchVehicle(){
     if(s1&&s1.length) vehicle = s1.find(r=>(r['Code']||'').toUpperCase()===input);
     if(vehicle) vehicle['_src']='sent';
 
-    // Fallback Sheet2
+    // Fallback Sheet2 — uses the cached loader (loaded once, reused after)
     if(!vehicle){
-      const s2 = await jsonpFetch(SHEET2_URL);
+      const s2 = await loadSheet2();
       if(s2&&s2.length){
-        const raw = s2.find(r=>(r['CustomerCode']||'').toUpperCase()===input);
+        const raw = s2.find(r=>(r['Code']||'').toUpperCase()===input);
         if(raw){
-          vehicle={};
-          Object.keys(raw).forEach(k=>{ vehicle[S2_KEY_MAP[k]||k]=raw[k]; });
+          vehicle = Object.assign({}, raw);
           vehicle['_src']='alldata';
         }
       }
@@ -2372,7 +2405,10 @@ async function ffSearchVehicle(){
       (r['VehicleCode']||'').toUpperCase()===input &&
       !['Completed','Rejected'].includes(r['Status'])
     );
-    if(active){ showFFSearchMsg('ineligible','This vehicle already has an active requisition ('+active['Status']+').'); return; }
+    if(active){
+      showFFActiveReqCard(active);
+      return;
+    }
 
     ffFoundVehicle = vehicle;
     ffFoundVehicle['_code'] = input;
@@ -2389,6 +2425,21 @@ function showFFSearchMsg(type, msg){
   el.style.display='block';
   const cls = type==='ineligible' ? 'ineligible' : 'ineligible';
   el.innerHTML = '<div class="ff-vehicle-card '+cls+'"><div class="ff-vehicle-title">'+msg+'</div></div>';
+}
+
+// Vehicle already has an active (non-completed/non-rejected) requisition —
+// show the same tappable-card pattern as a found vehicle, but tapping opens
+// the full requisition status/tracking box (showReqDetail) instead of the
+// vehicle-detail popup.
+function showFFActiveReqCard(req){
+  var el = document.getElementById('ffSearchResult');
+  el.style.display='block';
+  window._ffActiveReqDetail = req;
+  el.innerHTML =
+    '<div class="ff-vehicle-card ineligible" style="cursor:pointer;" onclick="showReqDetail(window._ffActiveReqDetail)">' +
+    '<div class="ff-vehicle-title">This vehicle already has an active requisition — <span>'+(req['Status']||'Pending')+'</span></div>' +
+    '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">Tap to view full tracking status →</div>' +
+    '</div>';
 }
 
 function showFFVehicleFound(v, code){
@@ -2540,14 +2591,22 @@ function renderFFRequisitions(){
   document.getElementById('ffCardApproved').textContent  = ffRequisitions.filter(r=>['Manager Approved','Admin Processing'].includes(r['Status'])).length;
   document.getElementById('ffCardCompleted').textContent = ffRequisitions.filter(r=>r['Status']==='Completed').length;
 
+  var filtered = ffCurrentFilter==='All' ? ffRequisitions
+    : ffCurrentFilter==='Approved' ? ffRequisitions.filter(r=>['Manager Approved','Admin Processing'].includes(r['Status']))
+    : ffRequisitions.filter(r=>r['Status']===ffCurrentFilter);
+
   if(!ffRequisitions.length){
     list.innerHTML='<div class="ff-empty">No requisitions yet. Search a vehicle above to submit.</div>';
     return;
   }
+  if(!filtered.length){
+    list.innerHTML='<div class="ff-empty">No requisitions found for this filter.</div>';
+    return;
+  }
   window._reqMap = {};
-  ffRequisitions.forEach(function(r,i){ window._reqMap[i]=r; });
+  filtered.forEach(function(r,i){ window._reqMap[i]=r; });
 
-  list.innerHTML = ffRequisitions.map(function(r,i){
+  list.innerHTML = filtered.map(function(r,i){
     var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
     var bc   = statusBadgeClass(r['Status']||'Pending');
     var rmk  = r['ManagerRemark'] ? '<span>' + r['ManagerRemark'] + '</span>' : '';
@@ -2696,7 +2755,7 @@ function buildCountdownHTML(r){
     '<div class="wd-icon">' + icon + '</div>' +
     '<div class="wd-info">' +
     '<div class="wd-days ' + type + '">' + (remaining > 0 ? remaining : 0) + ' days</div>' +
-    '<div class="wd-label">' + msg + ' · Deadline: ' + deadlineStr + '</div>' +
+    '<div class="wd-label">' + msg + ' · Approximate Sent Date: ' + deadlineStr + '</div>' +
     '<div class="wd-bar-wrap"><div class="wd-bar-fill" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
     '</div></div>';
 }
@@ -2761,6 +2820,11 @@ function showReqDetail(rStr){
   var admRmk = r['AdminRemark']
     ? '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:12px;margin-top:10px;"><div style="font-size:10px;font-weight:700;color:#5B21B6;text-transform:uppercase;margin-bottom:4px;">Notes</div><div style="font-size:13px;color:var(--navy);">'+r['AdminRemark']+'</div></div>'
     : '';
+  var approvedBy = (r['ManagerUsername'] && r['Status'] !== 'Pending')
+    ? '<div style="font-size:11px;color:var(--text2);margin-top:8px;">' +
+      (r['Status']==='Rejected' ? 'Rejected by ' : 'Approved by ') +
+      '<strong style="color:var(--navy);">' + (MGR_DISPLAY_NAMES[r['ManagerUsername']] || r['ManagerUsername']) + '</strong></div>'
+    : '';
 
   var html = '<div class="ov" onclick="if(event.target===this)closeModal()">';
   html += '<div class="rec-box"><div class="rec-head">';
@@ -2768,6 +2832,7 @@ function showReqDetail(rStr){
   html += '<button class="rec-close" onclick="closeModal()">X</button></div>';
   html += '<div class="rec-body" style="padding:16px;">';
   html += tracking;
+  html += approvedBy;
   html += countdown;
   html += '<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:12px;">';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
@@ -2789,6 +2854,78 @@ function loadManagerPanel(){
     document.getElementById('mgrWelcomeName').textContent = 'Welcome, ' + (SESSION.name||'Manager');
   }
   loadMgrRequisitions();
+}
+
+// ── MANAGER: CHECK VEHICLE STATUS ─────────────────────────────────────────────
+// (No territory restriction — managers can look up any vehicle. Read-only:
+// managers don't submit requisitions, so no "Submit" button here.)
+async function mgrSearchVehicle(){
+  const input = document.getElementById('mgrSearchInput').value.trim().toUpperCase();
+  const btn   = document.getElementById('mgrSearchBtn');
+  if(!input){ showMgrSearchMsg('Please enter a vehicle code.'); return; }
+
+  btn.disabled=true; btn.textContent='Searching...';
+  try{
+    let vehicle = null;
+    const s1 = await jsonpFetch(SHEET1_URL);
+    if(s1&&s1.length) vehicle = s1.find(r=>(r['Code']||'').toUpperCase()===input);
+    if(vehicle) vehicle['_src']='sent';
+
+    if(!vehicle){
+      const s2 = await loadSheet2();
+      if(s2&&s2.length){
+        const raw = s2.find(r=>(r['Code']||'').toUpperCase()===input);
+        if(raw){
+          vehicle = Object.assign({}, raw);
+          vehicle['_src']='alldata';
+        }
+      }
+    }
+
+    if(!vehicle){ showMgrSearchMsg('Vehicle code <strong>'+input+'</strong> not found.'); return; }
+    vehicle['_code'] = input;
+
+    // Show a link to the tracking box too, if this vehicle already has a requisition on file
+    const existing = (mgrRequisitions||[]).find(r=>(r['VehicleCode']||'').toUpperCase()===input);
+    showMgrVehicleFound(vehicle, existing);
+  }catch(e){
+    showMgrSearchMsg('Connection error. Please try again.');
+  }finally{
+    btn.disabled=false; btn.textContent='Search';
+  }
+}
+
+function showMgrSearchMsg(msg){
+  var el = document.getElementById('mgrSearchResult');
+  el.style.display='block';
+  el.innerHTML = '<div class="ff-vehicle-card ineligible"><div class="ff-vehicle-title">'+msg+'</div></div>';
+}
+
+function showMgrVehicleFound(v, existingReq){
+  window._mgrFoundVehicleDetail = v;
+  window._mgrFoundReqDetail = existingReq || null;
+  var el  = document.getElementById('mgrSearchResult');
+  el.style.display='block';
+  var src = v['_src']==='sent' ? 'Sent Status' : 'All Data';
+  var html =
+    '<div class="ff-vehicle-card eligible" style="cursor:pointer;" onclick="showVehicleDetailPopup(window._mgrFoundVehicleDetail)">' +
+    '<div class="ff-vehicle-title">Vehicle Found — '+v['_code']+
+    '<span style="font-size:10px;font-weight:600;color:var(--text3);margin-left:auto;">'+src+'</span></div>' +
+    '<div class="ff-vehicle-rows">' +
+    '<div class="ff-vehicle-row">Customer: <span>'+(v['Customer Name']||'—')+'</span></div>' +
+    '<div class="ff-vehicle-row">Reg No: <span>'+(v['Registration No']||'—')+'</span></div>' +
+    '<div class="ff-vehicle-row">Engine No: <span>'+(v['Engine No']||'—')+'</span></div>' +
+    '<div class="ff-vehicle-row">Status: <span>'+(v['Status']||'—')+'</span></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">Tap to view full details →</div>' +
+    '</div>';
+  if(existingReq){
+    html += '<div class="ff-vehicle-card ineligible" style="cursor:pointer;margin-top:8px;" onclick="showReqDetail(window._mgrFoundReqDetail)">' +
+      '<div class="ff-vehicle-title">Requisition on file — <span>'+(existingReq['Status']||'Pending')+'</span></div>' +
+      '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">Tap to view tracking status →</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
 }
 
 async function loadMgrRequisitions(){
@@ -2820,6 +2957,14 @@ function mgrSetFilter(filter){
     var el = document.getElementById(id);
     if(el) el.classList.toggle('active', f===filter);
   });
+  // Also reflect selection on the stat boxes above (Total/Pending/Processed)
+  var statMap = { 'All':'mgrStatBoxTotal', 'Pending':'mgrStatBoxPending', 'Processed':'mgrStatBoxDone' };
+  ['mgrStatBoxTotal','mgrStatBoxPending','mgrStatBoxDone'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  var activeStatBox = document.getElementById(statMap[filter]);
+  if(activeStatBox) activeStatBox.classList.add('active');
   renderMgrRequisitions();
 }
 
@@ -2834,7 +2979,9 @@ function renderMgrRequisitions(){
 
   var filtered = mgrCurrentFilter === 'All'
     ? mgrRequisitions
-    : mgrRequisitions.filter(function(r){ return r['Status']===mgrCurrentFilter; });
+    : mgrCurrentFilter === 'Processed'
+      ? mgrRequisitions.filter(function(r){ return r['Status']==='Manager Approved'||r['Status']==='Rejected'; })
+      : mgrRequisitions.filter(function(r){ return r['Status']===mgrCurrentFilter; });
 
   if(!filtered.length){
     list.innerHTML = '<div class="ff-empty">No requisitions found for this filter.</div>';
@@ -2990,6 +3137,20 @@ function mgrViewDetail(r){
 }
 
 function showAdminReqPanel(){
+  // Make sure dashboard is active (sidebar is inside dashboard)
+  var dash = document.getElementById('dashboard');
+  if(!dash.classList.contains('active')){
+    document.getElementById('preface').classList.remove('active');
+    dash.classList.add('active');
+    if(all.length>0){fil=[...all];pgN=0;updateKPIs();render();}
+    else loadData();
+  }
+  document.getElementById('adminReqPanel').style.display='block';
+  document.body.style.overflow='hidden';
+  loadAdmRequisitions();
+}
+
+function showAdminReqPanelFromPreface(){
   document.getElementById('adminReqPanel').style.display='block';
   document.body.style.overflow='hidden';
   loadAdmRequisitions();
@@ -3006,8 +3167,7 @@ async function loadAdmRequisitions(){
   try{
     var result = await authFetch(AUTH_URL, {
       action: 'getAllRequisitions',
-      token:  TOKEN,
-      adminUsername: SESSION.username
+      token:  TOKEN
     });
     admAllRequisitions = (result.rows||[]).reverse();
     filterAdmRequisitions();
@@ -3230,6 +3390,25 @@ function logout(){
 }
 
 // ── RESTORE SESSION ON PAGE LOAD ──────────────────────────────────────────────
+// Global unhandled promise rejection handler
+window.addEventListener('unhandledrejection', function(e){
+  console.warn('Unhandled error:', e.reason);
+  // Don't show error if it's a session expiry (already handled)
+  if(e.reason && String(e.reason).indexOf('Session expired') >= 0) return;
+  // Don't show for warmup ping errors
+  if(e.reason && String(e.reason).indexOf('No internet') >= 0){
+    showFFToast('No internet connection. Please check your connection.');
+  }
+  e.preventDefault();
+});
+
+window.onerror = function(msg, src, line){
+  // Suppress known false positives
+  if(msg && msg.indexOf('Script error') >= 0) return true;
+  console.warn('JS Error:', msg, 'Line:', line);
+  return false;
+};
+
 window.onload = function(){
   // Warm up Apps Script silently after 2 seconds
   setTimeout(function(){
@@ -3274,7 +3453,9 @@ window.onload = function(){
   });
   document.addEventListener('dragstart',function(e){e.preventDefault();return false;});
   var devOpen=false;
+  var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   setInterval(function(){
+    if(isTouchDevice) return; // this heuristic isn't reliable on phones/tablets — skip there
     if(window.outerWidth-window.innerWidth>160||window.outerHeight-window.innerHeight>160){
       if(!devOpen){
         devOpen=true;
