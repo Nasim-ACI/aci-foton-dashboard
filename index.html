@@ -812,7 +812,8 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     <div class="ff-user-info">
       <div id="ffAvatar" class="ff-avatar">F</div>
       <div><div class="ff-uname" id="ffUserName">—</div><div class="ff-urole" id="ffUserRole">Field Force</div></div>
-      <button class="tbtn" style="margin-left:8px;" onclick="logout()">🔒 Logout</button>
+      <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
+      <button class="tbtn" onclick="logout()">🔒 Logout</button>
     </div>
   </div>
   <div class="ff-body">
@@ -1124,6 +1125,12 @@ function jsonpFetch(url,extraParams){
   });
 }
 
+// ── SHEET 1 / SHEET 2 — now routed through the session-gated Auth.gs actions
+// instead of the old static-token URLs. A valid login is required for either
+// of these to return anything at all.
+function fetchSheet1(){ return authFetch(AUTH_URL, {action:'getSheet1Data'}); }
+function fetchSheet2(){ return authFetch(AUTH_URL, {action:'getSheet2Data'}); }
+
 // ── SHEET 2 HELPERS ───────────────────────────────────────────────────────────
 // Normalise a Sheet2 row so its keys match the Sheet1/KEYS convention
 function normaliseS2Row(r){
@@ -1159,7 +1166,7 @@ async function loadSheet2(){
   }
   s2loading=true;
   try{
-    const raw=await jsonpFetch(SHEET2_URL);
+    const raw=await fetchSheet2();
     if(!Array.isArray(raw))throw new Error('Sheet 2 returned unexpected format.');
     s2cache=raw.map(normaliseS2Row);
     return s2cache;
@@ -1179,7 +1186,7 @@ async function loadData(){
   document.getElementById('errBar').style.display='none';
   document.getElementById('tbody').innerHTML='<tr><td colspan="13" class="empty">Loading...</td></tr>';
   try{
-    const d=await jsonpFetch(SHEET1_URL);
+    const d=await fetchSheet1();
     if(!Array.isArray(d))throw new Error('Unexpected data format from Sheet 1.');
     all=d;buildRv();goFilter();updateKPIs();
     const t=new Date().toLocaleTimeString();
@@ -1217,7 +1224,7 @@ async function loadPreface(){
   document.getElementById('pfDot').style.background='#D97706';
   document.getElementById('pfSync').textContent='Connecting...';
   try{
-    const d=await jsonpFetch(SHEET1_URL);
+    const d=await fetchSheet1();
     if(!Array.isArray(d))throw new Error('Unexpected data format from Sheet 1.');
     all=d;const n=d.length;
     const sd=d.filter(r=>{const s=String(r['Status']||'').toLowerCase().trim();return s==='sent'||s==='delivered';}).length;
@@ -2144,12 +2151,15 @@ function switchRole(role){
   if(role==='field'){
     lbl.textContent = 'Staff ID';
     idInput.placeholder = 'Enter your Staff ID';
+    idInput.setAttribute('inputmode','numeric');
   } else if(role==='manager'){
     lbl.textContent = 'Manager Username';
     idInput.placeholder = 'Enter your username';
+    idInput.setAttribute('inputmode','numeric');
   } else {
     lbl.textContent = 'Admin Username';
     idInput.placeholder = 'Enter admin username';
+    idInput.setAttribute('inputmode','text');
   }
   document.getElementById('lockErr').style.display='none';
   document.getElementById('lockSuccess').style.display='none';
@@ -2328,7 +2338,7 @@ function onLoginSuccess(session){
 
   // Preload Sheet1 in background for faster subsequent searches
   if(!all || !all.length){
-    jsonpFetch(SHEET1_URL).then(function(d){ if(Array.isArray(d)) all=d; }).catch(function(){});
+    fetchSheet1().then(function(d){ if(Array.isArray(d)) all=d; }).catch(function(){});
   }
 
   if(session.role === 'admin'){
@@ -2360,6 +2370,71 @@ function populateFFProfile(s){
   document.getElementById('ffStaffId').textContent = s.staffId || '—';
 }
 
+// ── CHANGE PASSWORD (Field Force) ─────────────────────────────────────────────
+function openChangePasswordModal(){
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
+    '<div class="rec-box">' +
+    '<div class="rec-head"><div class="rec-head-title">🔑 Change Password</div>' +
+    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
+    '<div class="rec-body" style="padding:18px;">' +
+    '<div class="ff-remarks-wrap"><label class="ff-remarks-label">Current Password</label>' +
+    '<input type="password" class="ff-remarks-input" id="cpCurrent" style="min-height:unset;resize:none;" autocomplete="off"/></div>' +
+    '<div class="ff-remarks-wrap"><label class="ff-remarks-label">New Password</label>' +
+    '<input type="password" class="ff-remarks-input" id="cpNew" style="min-height:unset;resize:none;" autocomplete="off"/></div>' +
+    '<div class="ff-remarks-wrap"><label class="ff-remarks-label">Confirm New Password</label>' +
+    '<input type="password" class="ff-remarks-input" id="cpConfirm" style="min-height:unset;resize:none;" autocomplete="off"/></div>' +
+    '<div id="cpErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;margin-top:4px;"></div>' +
+    '</div>' +
+    '<div class="rec-foot">' +
+    '<button class="rec-btn rec-btn-close" onclick="closeModal()">Cancel</button>' +
+    '<button class="rec-btn rec-btn-save" id="cpSubmitBtn" onclick="submitChangePassword()">Update Password</button>' +
+    '</div></div></div>';
+}
+
+async function submitChangePassword(){
+  var curr    = document.getElementById('cpCurrent').value;
+  var newPw   = document.getElementById('cpNew').value;
+  var confirm = document.getElementById('cpConfirm').value;
+  var errEl   = document.getElementById('cpErr');
+  var btn     = document.getElementById('cpSubmitBtn');
+  errEl.style.display = 'none';
+
+  if(!curr || !newPw || !confirm){
+    errEl.textContent = 'Please fill in all three fields.';
+    errEl.style.display = 'block'; return;
+  }
+  if(newPw.length < 4){
+    errEl.textContent = 'New password must be at least 4 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  if(newPw !== confirm){
+    errEl.textContent = 'New password and confirmation do not match.';
+    errEl.style.display = 'block'; return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Updating...';
+  try{
+    var result = await authFetch(AUTH_URL, {
+      action: 'changePassword',
+      currentPassword: curr,
+      newPassword: newPw
+    });
+    if(result.error){
+      errEl.textContent = result.error;
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Update Password';
+    } else {
+      closeModal();
+      showFFToast('Password updated! Use your new password next time you log in.');
+    }
+  }catch(e){
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Update Password';
+  }
+}
+
 // ── PHASE 2: REQUISITION MODULE ────────────────────────────────────────────────
 
 let ffRequisitions = [];
@@ -2371,18 +2446,25 @@ async function ffSearchVehicle(){
   const btn      = document.getElementById('ffSearchBtn');
   if(!input){ showFFSearchMsg('error','Please enter a vehicle code.'); return; }
 
-  // Territory check: vehicle CustomerCode must start with officer areaCode letter
-  const oCode = (SESSION.areaCode||'').toUpperCase();
-  if(oCode && !input.startsWith(oCode)){
-    showFFSearchMsg('ineligible','This vehicle is not in your territory. Your code is <strong>'+oCode+'</strong>.');
+  // Territory check: vehicle code must start with one of the officer's assigned
+  // area code letters. Supports officers with multiple codes (e.g. "H,C" in the
+  // AreaCode column) — the vehicle just needs to match any one of them.
+  const oCodes = (SESSION.areaCode||'').toUpperCase().split(',').map(c=>c.trim()).filter(Boolean);
+  const matchesTerritory = !oCodes.length || oCodes.some(c=>input.startsWith(c));
+  if(!matchesTerritory){
+    showFFSearchMsg('ineligible','This vehicle is not in your territory. Your code'+(oCodes.length>1?'s are':' is')+' <strong>'+oCodes.join(', ')+'</strong>.');
     ffFoundVehicle = null; return;
   }
+  // The vehicle's own area code (its first letter) — used later so the
+  // requisition record stores the vehicle's actual code, not the officer's
+  // full multi-code string, keeping manager code-based filtering correct.
+  const vehicleAreaCode = input.charAt(0);
 
   btn.disabled=true; btn.textContent='Searching...'; ffFoundVehicle=null;
   try{
     let vehicle = null;
     // Search Sheet1 first
-    const s1 = await jsonpFetch(SHEET1_URL);
+    const s1 = await fetchSheet1();
     if(s1&&s1.length) vehicle = s1.find(r=>(r['Code']||'').toUpperCase()===input);
     if(vehicle) vehicle['_src']='sent';
 
@@ -2400,6 +2482,14 @@ async function ffSearchVehicle(){
 
     if(!vehicle){ showFFSearchMsg('ineligible','Vehicle code <strong>'+input+'</strong> not found.'); return; }
 
+    // Block requisitions for vehicles whose papers are already Sent/Delivered —
+    // no new requisition is needed once that's already happened.
+    var statusL = String(vehicle['Status']||'').toLowerCase().trim();
+    if(vehicle['_src']==='sent' && (statusL==='sent' || statusL==='delivered')){
+      showFFAlreadySentCard(vehicle, input);
+      return;
+    }
+
     // Check active requisition
     const active = ffRequisitions.find(r=>
       (r['VehicleCode']||'').toUpperCase()===input &&
@@ -2412,6 +2502,7 @@ async function ffSearchVehicle(){
 
     ffFoundVehicle = vehicle;
     ffFoundVehicle['_code'] = input;
+    ffFoundVehicle['_areaCode'] = vehicleAreaCode;
     showFFVehicleFound(vehicle, input);
   }catch(e){
     showFFSearchMsg('error','Connection error. Please try again.');
@@ -2439,6 +2530,23 @@ function showFFActiveReqCard(req){
     '<div class="ff-vehicle-card ineligible" style="cursor:pointer;" onclick="showReqDetail(window._ffActiveReqDetail)">' +
     '<div class="ff-vehicle-title">This vehicle already has an active requisition — <span>'+(req['Status']||'Pending')+'</span></div>' +
     '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">Tap to view full tracking status →</div>' +
+    '</div>';
+}
+
+// Vehicle's ownership papers are already Sent/Delivered — no requisition needed.
+// Still tappable to view the vehicle's details, just without a Submit button.
+function showFFAlreadySentCard(v, code){
+  window._ffFoundVehicleDetail = v;
+  var el = document.getElementById('ffSearchResult');
+  el.style.display='block';
+  el.innerHTML =
+    '<div class="ff-vehicle-card ineligible" style="cursor:pointer;" onclick="showVehicleDetailPopup(window._ffFoundVehicleDetail)">' +
+    '<div class="ff-vehicle-title">Papers already '+(v['Status']||'Sent')+' — '+code+'</div>' +
+    '<div class="ff-vehicle-rows">' +
+    '<div class="ff-vehicle-row">Customer: <span>'+(v['Customer Name']||'—')+'</span></div>' +
+    '<div class="ff-vehicle-row">Reg No: <span>'+(v['Registration No']||'—')+'</span></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--blue);font-weight:600;margin-top:6px;">No requisition needed — tap to view full details →</div>' +
     '</div>';
 }
 
@@ -2506,11 +2614,12 @@ async function submitRequisition(){
     String(Math.floor(Math.random()*9000)+1000);
 
   try{
+    const submittedAreaCode = ffFoundVehicle['_areaCode'] || SESSION.areaCode;
     const result = await authFetch(AUTH_URL,{
       action:'submitRequisition', token:TOKEN,
       requisitionId:reqId, vehicleCode:ffFoundVehicle['_code'],
       staffId:SESSION.staffId, officerName:SESSION.name,
-      territory:SESSION.territory, area:SESSION.area, areaCode:SESSION.areaCode,
+      territory:SESSION.territory, area:SESSION.area, areaCode:submittedAreaCode,
       submissionDate:now.toISOString(), remarks:remarks, status:'Pending'
     });
     if(result.error){
@@ -2520,7 +2629,7 @@ async function submitRequisition(){
       var newReq = {
         RequisitionId:reqId, VehicleCode:ffFoundVehicle['_code'],
         StaffId:SESSION.staffId, OfficerName:SESSION.name,
-        Territory:SESSION.territory, Area:SESSION.area, AreaCode:SESSION.areaCode,
+        Territory:SESSION.territory, Area:SESSION.area, AreaCode:submittedAreaCode,
         SubmissionDate:now.toISOString(), Status:'Pending',
         ManagerRemark:'', AdminRemark:remarks
       };
@@ -2569,7 +2678,7 @@ async function loadFFRequisitions(){
     // Load Sheet1 and requisitions in PARALLEL
     var results = await Promise.all([
       authFetch(AUTH_URL,{action:'getMyRequisitions',token:TOKEN,staffId:SESSION.staffId}),
-      (!all||!all.length) ? jsonpFetch(SHEET1_URL) : Promise.resolve(all)
+      (!all||!all.length) ? fetchSheet1() : Promise.resolve(all)
     ]);
     var reqResult  = results[0];
     var sheet1Data = results[1];
@@ -2867,7 +2976,7 @@ async function mgrSearchVehicle(){
   btn.disabled=true; btn.textContent='Searching...';
   try{
     let vehicle = null;
-    const s1 = await jsonpFetch(SHEET1_URL);
+    const s1 = await fetchSheet1();
     if(s1&&s1.length) vehicle = s1.find(r=>(r['Code']||'').toUpperCase()===input);
     if(vehicle) vehicle['_src']='sent';
 
