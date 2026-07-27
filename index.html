@@ -4,6 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FOTON-ACI MOTORS — Ownership Papers Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <style>
@@ -159,6 +162,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .adm-table td{padding:10px 12px;border-bottom:1px solid var(--bg);color:var(--navy);font-weight:500;vertical-align:middle;}
 .adm-table tr:last-child td{border-bottom:none;}
 .adm-table tr:hover td{background:var(--blue-bg);}
+.adm-table tr.adm-row-urgent td{background:var(--amber-bg);}
+.adm-table tr.adm-row-urgent:hover td{background:#FDE68A;}
+.adm-table tr.adm-row-expired td{background:var(--red-bg);}
+.adm-table tr.adm-row-expired:hover td{background:#FECACA;}
 .adm-action-btn{padding:5px 12px;border-radius:7px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .adm-btn-process{background:var(--blue);color:#fff;}
 .adm-btn-complete{background:var(--mint);color:#fff;}
@@ -855,7 +862,8 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     <div class="ff-user-info">
       <div class="ff-avatar" style="background:#D97706;">M</div>
       <div><div class="ff-uname" id="mgrUserName">Manager</div><div class="ff-urole">Approval Panel</div></div>
-      <button class="tbtn" style="margin-left:8px;" onclick="logout()">🔒 Logout</button>
+      <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
+      <button class="tbtn" onclick="logout()">🔒 Logout</button>
     </div>
   </div>
   <div class="ff-body">
@@ -900,8 +908,8 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     <div class="sb-divider"></div>
     <div class="sb-nav">
       <div class="sb-lbl">Navigation</div>
-      <div class="sb-item active"><span class="sb-icon">📊</span>Dashboard</div>
-      <div class="sb-item" onclick="goToPreface()"><span class="sb-icon">🏠</span>Preface</div>
+      <div class="sb-item active" id="sbDashboardItem" onclick="goToDashboard()"><span class="sb-icon">📊</span>Dashboard</div>
+      <div class="sb-item" id="sbPrefaceItem" onclick="goToPreface()"><span class="sb-icon">🏠</span>Preface</div>
       <div class="sb-lbl">Admin</div>
       <div class="sb-item" id="sbReqItem" onclick="showAdminReqPanel()"><span class="sb-icon">📋</span>Requisitions</div>
       <div class="sb-lbl">Actions</div>
@@ -1057,16 +1065,25 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     <!-- Search -->
     <input class="adm-search" type="text" id="admSearchInput" placeholder="Search by code, officer, ID..." oninput="filterAdmRequisitions()" inputmode="search" style="width:100%;margin-bottom:14px;box-sizing:border-box;"/>
 
+    <!-- Bulk action bar — hidden until at least one row is selected -->
+    <div id="admBulkBar" style="display:none;align-items:center;gap:10px;background:var(--blue-bg);border:2px solid var(--blue-soft);border-radius:10px;padding:10px 14px;margin-bottom:12px;flex-wrap:wrap;">
+      <span id="admBulkCount" style="font-size:12px;font-weight:800;color:var(--navy);">0 selected</span>
+      <button class="adm-action-btn adm-btn-process" id="admBulkProcessBtn" onclick="bulkAdmUpdateStatus('Admin Processing')">Mark as Processing</button>
+      <button class="adm-action-btn adm-btn-complete" id="admBulkCompleteBtn" onclick="bulkAdmUpdateStatus('Completed')">Mark as Completed</button>
+      <button class="adm-filter-btn" onclick="clearAdmSelection()">Clear Selection</button>
+    </div>
+
     <!-- Table -->
     <div class="adm-table-wrap">
       <table class="adm-table">
         <thead><tr>
+          <th style="width:32px;"><input type="checkbox" id="admSelectAllChk" onclick="toggleAdmSelectAll(this)"></th>
           <th>Req ID</th><th>Vehicle Code</th><th>Officer</th>
           <th>Territory</th><th>Date</th><th>Status</th>
           <th>Mgr Remark</th><th>Action</th>
         </tr></thead>
         <tbody id="admReqTableBody">
-          <tr><td colspan="8" class="adm-empty">Loading requisitions...</td></tr>
+          <tr><td colspan="9" class="adm-empty">Loading requisitions...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1932,12 +1949,16 @@ function printRec(ai){
 function goToDashboard(){
   document.getElementById('preface').classList.remove('active');
   document.getElementById('dashboard').classList.add('active');
+  document.getElementById('sbDashboardItem').classList.add('active');
+  document.getElementById('sbPrefaceItem').classList.remove('active');
   if(all.length>0){fil=[...all];pgN=0;updateKPIs();render();}
   else loadData();
 }
 function goToPreface(){
   document.getElementById('dashboard').classList.remove('active');
   document.getElementById('preface').classList.add('active');
+  document.getElementById('sbPrefaceItem').classList.add('active');
+  document.getElementById('sbDashboardItem').classList.remove('active');
 }
 
 // FUZZY SEARCH
@@ -2131,6 +2152,7 @@ let ffCurrentFilter = 'All';
 let admCurrentFilter = 'All';
 let admAllRequisitions = [];
 let admCurrentSearch = '';
+let admSelected = new Set(); // RequisitionIds currently checked for bulk action
 let mgrRequisitions = [];
 function ffSetFilter(filter){
   ffCurrentFilter = filter;
@@ -2160,6 +2182,14 @@ function switchRole(role){
     lbl.textContent = 'Admin Username';
     idInput.placeholder = 'Enter admin username';
     idInput.setAttribute('inputmode','text');
+  }
+  // Some mobile keyboards (notably Samsung Keyboard) keep the old on-screen
+  // keyboard layout if the field is still focused when inputmode changes —
+  // changing the attribute alone isn't always enough. If the field currently
+  // has focus, force a blur+refocus so the browser re-evaluates the layout.
+  if(document.activeElement === idInput){
+    idInput.blur();
+    setTimeout(()=>idInput.focus(), 60);
   }
   document.getElementById('lockErr').style.display='none';
   document.getElementById('lockSuccess').style.display='none';
@@ -2336,8 +2366,11 @@ function onLoginSuccess(session){
   document.getElementById('lockErr').style.display='none';
   document.getElementById('lockAtt').style.display='none';
 
-  // Preload Sheet1 in background for faster subsequent searches
-  if(!all || !all.length){
+  // Preload Sheet1 in background for faster subsequent searches.
+  // Admin is excluded here because loadPreface() (called right below for
+  // admin) already fetches Sheet1 itself — without this, admin logins were
+  // firing two identical ~8,000-row requests to Apps Script at once.
+  if(session.role !== 'admin' && (!all || !all.length)){
     fetchSheet1().then(function(d){ if(Array.isArray(d)) all=d; }).catch(function(){});
   }
 
@@ -2490,15 +2523,25 @@ async function ffSearchVehicle(){
       return;
     }
 
-    // Check active requisition
-    const active = ffRequisitions.find(r=>
+    // Check active requisition — first the officer's own list (gives the
+    // full tap-to-view-tracking experience), then system-wide for any other
+    // officer's active requisition on this vehicle (privacy-safe: status only,
+    // never who submitted it — that's not this officer's data to see).
+    const ownActive = ffRequisitions.find(r=>
       (r['VehicleCode']||'').toUpperCase()===input &&
       !['Completed','Rejected'].includes(r['Status'])
     );
-    if(active){
-      showFFActiveReqCard(active);
+    if(ownActive){
+      showFFActiveReqCard(ownActive);
       return;
     }
+    try{
+      const activeCheck = await authFetch(AUTH_URL, {action:'checkActiveRequisition', vehicleCode:input});
+      if(activeCheck && activeCheck.active){
+        showFFSearchMsg('ineligible','This vehicle already has an active requisition — status: <strong>'+activeCheck.status+'</strong>. It is being handled by another officer.');
+        return;
+      }
+    }catch(err){ /* don't hard-block search if this check itself fails */ }
 
     ffFoundVehicle = vehicle;
     ffFoundVehicle['_code'] = input;
@@ -2826,17 +2869,31 @@ function addWorkingDays(fromDate, days){
 }
 
 function buildCountdownHTML(r){
-  // Only show countdown for Manager Approved, Admin Processing stages
   var status = r['Status'] || '';
-  if(status === 'Pending' || status === 'Rejected' || status === 'Completed') return '';
+  if(status === 'Pending' || status === 'Rejected') return '';
 
-  // Use LastUpdated as the Manager Approved date
-  // (when status changed to Manager Approved)
-  var approvedDateStr = r['LastUpdated'] || r['SubmissionDate'];
+  // Prefer the true recorded approval date; fall back to LastUpdated only for
+  // older rows that predate the ManagerApprovedDate column being added.
+  var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
   if(!approvedDateStr) return '';
 
   var approvedDate = new Date(approvedDateStr);
   if(isNaN(approvedDate.getTime())) return '';
+
+  // Once Completed, show total duration instead of a live countdown.
+  if(status === 'Completed'){
+    var completedDateStr = r['LastUpdated'];
+    if(!completedDateStr) return '';
+    var completedDate = new Date(completedDateStr);
+    if(isNaN(completedDate.getTime())) return '';
+    var totalDays = countWorkingDays(approvedDate, completedDate);
+    return '<div class="wd-countdown ok">' +
+      '<div class="wd-icon">✅</div>' +
+      '<div class="wd-info">' +
+      '<div class="wd-days ok">' + totalDays + ' day' + (totalDays===1?'':'s') + '</div>' +
+      '<div class="wd-label">Completed in <strong>' + totalDays + '</strong> working day' + (totalDays===1?'':'s') + ' from manager approval</div>' +
+      '</div></div>';
+  }
 
   var today = new Date();
   today.setHours(23,59,59,0);
@@ -3272,7 +3329,7 @@ function hideAdminReqPanel(){
 
 async function loadAdmRequisitions(){
   document.getElementById('admReqTableBody').innerHTML =
-    '<tr><td colspan="8" class="adm-empty">Loading...</td></tr>';
+    '<tr><td colspan="9" class="adm-empty">Loading...</td></tr>';
   try{
     var result = await authFetch(AUTH_URL, {
       action: 'getAllRequisitions',
@@ -3282,7 +3339,7 @@ async function loadAdmRequisitions(){
     filterAdmRequisitions();
   }catch(e){
     document.getElementById('admReqTableBody').innerHTML =
-      '<tr><td colspan="8" class="adm-empty">Could not load. Check connection.</td></tr>';
+      '<tr><td colspan="9" class="adm-empty">Could not load. Check connection.</td></tr>';
   }
 }
 
@@ -3336,7 +3393,8 @@ function filterAdmRequisitions(){
 function renderAdmTable(rows){
   var tbody = document.getElementById('admReqTableBody');
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="8" class="adm-empty">No requisitions found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="adm-empty">No requisitions found.</td></tr>';
+    updateAdmBulkBar();
     return;
   }
   window._admRowMap = {};
@@ -3354,17 +3412,127 @@ function renderAdmTable(rows){
     } else {
       action = '<span style="font-size:11px;color:var(--text3);">—</span>';
     }
-    return '<tr onclick="admViewDetail(window._admRowMap['+i+'])" style="cursor:pointer;">' +
+
+    // Highlight rows nearing/past the 20-working-day deadline (15+ days
+    // elapsed since manager approval), so they're easy to spot in the list
+    // without opening each one. Also show total duration once Completed.
+    var rowClass = '';
+    var statusSub = '';
+    var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
+    if(status === 'Admin Processing' && approvedDateStr){
+      var apprDate = new Date(approvedDateStr);
+      if(!isNaN(apprDate.getTime())){
+        var today2 = new Date(); today2.setHours(23,59,59,0);
+        var elapsed2 = countWorkingDays(apprDate, today2);
+        var remaining2 = TOTAL_WD - elapsed2;
+        if(remaining2 <= 0) rowClass = ' adm-row-expired';
+        else if(remaining2 <= 5) rowClass = ' adm-row-urgent';
+      }
+    } else if(status === 'Completed' && approvedDateStr && r['LastUpdated']){
+      var apprDate2 = new Date(approvedDateStr);
+      var compDate  = new Date(r['LastUpdated']);
+      if(!isNaN(apprDate2.getTime()) && !isNaN(compDate.getTime())){
+        var totalD = countWorkingDays(apprDate2, compDate);
+        statusSub = '<div style="font-size:9px;color:var(--text3);margin-top:2px;">'+totalD+' working day'+(totalD===1?'':'s')+'</div>';
+      }
+    }
+
+    var checked = admSelected.has(String(r['RequisitionId']||'')) ? ' checked' : '';
+    return '<tr class="'+rowClass.trim()+'" onclick="admViewDetail(window._admRowMap['+i+'])" style="cursor:pointer;">' +
+      '<td onclick="event.stopPropagation();"><input type="checkbox" class="adm-row-chk" data-reqid="'+(r['RequisitionId']||'')+'" onclick="toggleAdmRowSelect(this)"'+checked+'></td>' +
       '<td style="font-size:11px;font-weight:700;">'+(r['RequisitionId']||'-')+'</td>' +
       '<td style="color:var(--blue);font-weight:700;">'+(r['VehicleCode']||'-')+'</td>' +
       '<td>'+(r['OfficerName']||'-')+'</td>' +
       '<td style="font-size:11px;">'+(r['Territory']||'-')+'</td>' +
       '<td style="font-size:11px;">'+date+'</td>' +
-      '<td><span class="req-status '+bc+'">'+status+'</span></td>' +
+      '<td><span class="req-status '+bc+'">'+status+'</span>'+statusSub+'</td>' +
       '<td style="font-size:11px;color:var(--text2);">'+(r['ManagerRemark']||'—')+'</td>' +
       '<td onclick="event.stopPropagation();">'+action+'</td>' +
       '</tr>';
   }).join('');
+  // Selection may include IDs not in the current filtered view — that's fine,
+  // they're just not shown right now. The select-all checkbox reflects only
+  // what's currently visible.
+  var allBoxes = document.querySelectorAll('.adm-row-chk');
+  var allChecked = allBoxes.length > 0 && Array.from(allBoxes).every(function(b){ return b.checked; });
+  var selectAllEl = document.getElementById('admSelectAllChk');
+  if(selectAllEl) selectAllEl.checked = allChecked;
+  updateAdmBulkBar();
+}
+
+// ── BULK SELECTION (admin panel) ──────────────────────────────────────────────
+function toggleAdmRowSelect(chk){
+  var id = chk.getAttribute('data-reqid');
+  if(chk.checked) admSelected.add(id);
+  else admSelected.delete(id);
+  var boxes = document.querySelectorAll('.adm-row-chk');
+  var allChecked = boxes.length > 0 && Array.from(boxes).every(function(b){ return b.checked; });
+  var selectAllEl = document.getElementById('admSelectAllChk');
+  if(selectAllEl) selectAllEl.checked = allChecked;
+  updateAdmBulkBar();
+}
+
+function toggleAdmSelectAll(chk){
+  var boxes = document.querySelectorAll('.adm-row-chk');
+  boxes.forEach(function(b){
+    b.checked = chk.checked;
+    var id = b.getAttribute('data-reqid');
+    if(chk.checked) admSelected.add(id);
+    else admSelected.delete(id);
+  });
+  updateAdmBulkBar();
+}
+
+function updateAdmBulkBar(){
+  var bar = document.getElementById('admBulkBar');
+  var count = admSelected.size;
+  if(count > 0){
+    bar.style.display = 'flex';
+    document.getElementById('admBulkCount').textContent = count + ' selected';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearAdmSelection(){
+  admSelected.clear();
+  filterAdmRequisitions(); // re-render also clears every checkbox
+}
+
+async function bulkAdmUpdateStatus(newStatus){
+  var ids = Array.from(admSelected);
+  if(!ids.length) return;
+  if(!confirm('Mark '+ids.length+' requisition(s) as "'+newStatus+'"?')) return;
+
+  var btn1 = document.getElementById('admBulkProcessBtn');
+  var btn2 = document.getElementById('admBulkCompleteBtn');
+  if(btn1) btn1.disabled = true;
+  if(btn2) btn2.disabled = true;
+
+  try{
+    var result = await authFetch(AUTH_URL, {
+      action: 'bulkUpdateStatus',
+      requisitionIds: ids.join(','),
+      newStatus: newStatus
+    });
+    if(result.error){
+      alert('Error: '+result.error);
+    } else {
+      admAllRequisitions.forEach(function(req){
+        if(ids.indexOf(String(req['RequisitionId']||'')) !== -1){
+          req['Status'] = newStatus;
+        }
+      });
+      admSelected.clear();
+      filterAdmRequisitions();
+      showFFToast((result.updated||ids.length)+' requisition(s) marked as '+newStatus+'.');
+    }
+  }catch(e){
+    alert('Connection error. Please try again.');
+  }finally{
+    if(btn1) btn1.disabled = false;
+    if(btn2) btn2.disabled = false;
+  }
 }
 
 function admUpdateStatusByIdx(idx, statusCode){
