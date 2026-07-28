@@ -582,15 +582,10 @@ button,.tbtn,.lock-btn,.ff-search-btn,.mgr-btn,.role-tab,.ff-req-item,.mgr-req-i
 /* ══ SPEED + MOBILE SMOOTH ══ */
 /* Hardware acceleration for all transitions */
 *{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
-.ff-req-item,.mgr-req-item,.pf-res-item,.ff-vehicle-card,.pf-leg{
-  will-change:transform;
-  transform:translateZ(0);
-}
 /* Smooth scrolling everywhere */
 html{scroll-behavior:smooth;}
 body,.ff-body,.rec-body,.ff-req-list,.mgr .ff-req-list,.adm-table-wrap{
   -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
 }
 /* Instant tap response */
 button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-filter-btn{
@@ -3406,9 +3401,10 @@ function renderAdmTable(rows){
     var bc     = statusBadgeClass(status);
     var action = '';
     if(status === 'Manager Approved'){
-      action = '<button class="adm-action-btn adm-btn-process" onclick="admUpdateStatusByIdx('+i+',0)">Process</button>';
+      action = '<button class="adm-action-btn adm-btn-process" onclick="admProcessWithRemark('+i+')">Process</button>';
     } else if(status === 'Admin Processing'){
-      action = '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">Complete</button>';
+      action = '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">Complete</button>' +
+        ' <button class="adm-action-btn" style="background:var(--bg);color:var(--navy);border:1.5px solid var(--border);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminRemark']?' Edit':' Remark')+'</button>';
     } else {
       action = '<span style="font-size:11px;color:var(--text3);">—</span>';
     }
@@ -3538,6 +3534,115 @@ async function bulkAdmUpdateStatus(newStatus){
 function admUpdateStatusByIdx(idx, statusCode){
   var statuses = ['Admin Processing', 'Completed'];
   admUpdateStatus(idx, statuses[statusCode]);
+}
+
+// ── PROCESS WITH OPTIONAL REMARK ──────────────────────────────────────────────
+// Opens when clicking "Process" — lets admin note an issue (e.g. missing
+// father's name, mobile number) right at the moment of moving this into
+// Admin Processing, instead of a plain yes/no confirm with no way to explain.
+function admProcessWithRemark(idx){
+  var r = window._admRowMap[idx];
+  if(!r) return;
+  window._admRemarkIdx = idx;
+  window._admRemarkMode = 'process';
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
+    '<div class="rec-box">' +
+    '<div class="rec-head"><div class="rec-head-title">Move to Admin Processing</div>' +
+    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
+    '<div class="rec-body" style="padding:18px;">' +
+    '<div class="req-detail-grid" style="margin-bottom:14px;">' +
+    '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'-')+'</div></div>' +
+    '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
+    '</div>' +
+    '<label class="ff-remarks-label">Remark (optional) — e.g. missing father\'s name, mobile number, or other issue</label>' +
+    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminRemark']||'')+'</textarea>' +
+    '<div id="admRemarkErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;"></div>' +
+    '</div>' +
+    '<div class="rec-foot">' +
+    '<button class="rec-btn rec-btn-close" onclick="closeModal()">Cancel</button>' +
+    '<button class="rec-btn rec-btn-save" id="admRemarkBtn" onclick="admSubmitRemark()">Confirm — Move to Processing</button>' +
+    '</div></div></div>';
+}
+
+// ── EDIT REMARK ONLY (no status change) ───────────────────────────────────────
+// For a requisition already in Admin Processing — flag/annotate an issue found
+// mid-way (e.g. missing data) without touching its status at all.
+function admEditRemarkModal(idx){
+  var r = window._admRowMap[idx];
+  if(!r) return;
+  window._admRemarkIdx = idx;
+  window._admRemarkMode = 'edit';
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
+    '<div class="rec-box">' +
+    '<div class="rec-head"><div class="rec-head-title">Edit Remark</div>' +
+    '<button class="rec-close" onclick="closeModal()">X</button></div>' +
+    '<div class="rec-body" style="padding:18px;">' +
+    '<div class="req-detail-grid" style="margin-bottom:14px;">' +
+    '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'-')+'</div></div>' +
+    '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
+    '</div>' +
+    '<label class="ff-remarks-label">Remark — e.g. missing father\'s name, mobile number, or other issue</label>' +
+    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminRemark']||'')+'</textarea>' +
+    '<div id="admRemarkErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;"></div>' +
+    '</div>' +
+    '<div class="rec-foot">' +
+    '<button class="rec-btn rec-btn-close" onclick="closeModal()">Cancel</button>' +
+    '<button class="rec-btn rec-btn-save" id="admRemarkBtn" onclick="admSubmitRemark()">Save Remark</button>' +
+    '</div></div></div>';
+}
+
+async function admSubmitRemark(){
+  var idx    = window._admRemarkIdx;
+  var mode   = window._admRemarkMode;
+  var r      = window._admRowMap[idx];
+  var remark = document.getElementById('admRemarkInput').value || '';
+  var errEl  = document.getElementById('admRemarkErr');
+  var btn    = document.getElementById('admRemarkBtn');
+  if(!r) return;
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+  errEl.style.display = 'none';
+
+  try{
+    var result;
+    if(mode === 'process'){
+      result = await authFetch(AUTH_URL, {
+        action: 'updateRequisitionStatus',
+        requisitionId: r['RequisitionId'],
+        newStatus: 'Admin Processing',
+        managerUsername: SESSION.username,
+        managerRemark: r['ManagerRemark']||'',
+        adminRemark: remark
+      });
+    } else {
+      result = await authFetch(AUTH_URL, {
+        action: 'updateAdminRemark',
+        requisitionId: r['RequisitionId'],
+        adminRemark: remark
+      });
+    }
+    if(result.error){
+      errEl.textContent = result.error;
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = mode==='process' ? 'Confirm — Move to Processing' : 'Save Remark';
+    } else {
+      admAllRequisitions.forEach(function(req){
+        if(req['RequisitionId']===r['RequisitionId']){
+          req['AdminRemark'] = remark;
+          if(mode === 'process') req['Status'] = 'Admin Processing';
+        }
+      });
+      closeModal();
+      filterAdmRequisitions();
+      showFFToast(mode==='process' ? 'Moved to Admin Processing.' : 'Remark saved.');
+    }
+  }catch(e){
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+  }
 }
 
 async function admUpdateStatus(idx, newStatus){
