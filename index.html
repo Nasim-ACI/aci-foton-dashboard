@@ -699,7 +699,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <div class="pf-brand-name">Ownership Papers Database</div>
     </div>
     <div class="pf-topnav-right">
-      <div class="pf-live" onclick="loadPreface()">
+      <div class="pf-live" onclick="loadPreface(true)">
         <div class="pf-live-dot" id="pfDot"></div>
         <div><div class="pf-live-txt">LIVE</div><div class="pf-live-sub" id="pfSync">Connecting...</div></div>
       </div>
@@ -718,7 +718,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
         <div class="pf-hero-sub">Manage, track and process vehicle ownership papers. Search records instantly, monitor delivery status, and access all customer data from one place.</div>
         <div class="pf-hero-btns">
           <button class="pf-hero-btn pf-hero-btn-p" onclick="goToDashboard()">📊 Open Full Dashboard</button>
-          <button class="pf-hero-btn pf-hero-btn-s" onclick="loadPreface()">↻ Refresh Data</button>
+          <button class="pf-hero-btn pf-hero-btn-s" onclick="loadPreface(true)">↻ Refresh Data</button>
         </div>
         <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.5);">Last sync: <span id="pfLastSync" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span> &nbsp;|&nbsp; Records: <span id="pfRec" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span></div>
       </div>
@@ -766,19 +766,11 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
         <div class="pf-bar-chart" id="barChart"><div style="font-size:12px;color:var(--text3);">Loading...</div></div>
       </div>
 
-      <!-- Showroom donut chart — real data -->
+      <!-- Monthly requisition approval stats -->
       <div class="pf-card">
-        <div class="pf-card-title">🗺️ Showroom Distribution</div>
-        <div class="pf-card-sub">Records by region</div>
-        <div class="pf-pie-wrap">
-          <svg id="donutSvg" width="130" height="130" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" style="cursor:pointer;">
-            <circle cx="65" cy="65" r="48" fill="none" stroke="var(--bg)" stroke-width="18"/>
-            <circle cx="65" cy="65" r="30" fill="white"/>
-            <text x="65" y="61" text-anchor="middle" font-size="10" fill="var(--text3)" font-family="Inter,sans-serif">Total</text>
-            <text x="65" y="75" text-anchor="middle" font-size="17" fill="var(--navy)" font-weight="800" font-family="Inter,sans-serif" id="pieN">—</text>
-          </svg>
-        </div>
-        <div class="pf-legend" id="donutLegend">
+        <div class="pf-card-title">📈 Requisition Approval Stats</div>
+        <div class="pf-card-sub">Manager-approved & completed counts per month, with average processing time</div>
+        <div id="approvalStatsBody" style="max-height:190px;overflow-y:auto;">
           <div style="font-size:11px;color:var(--text3);">Loading...</div>
         </div>
       </div>
@@ -908,7 +900,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <div class="sb-lbl">Admin</div>
       <div class="sb-item" id="sbReqItem" onclick="showAdminReqPanel()"><span class="sb-icon">📋</span>Requisitions</div>
       <div class="sb-lbl">Actions</div>
-      <div class="sb-item" onclick="loadData()"><span class="sb-icon">↻</span>Refresh</div>
+      <div class="sb-item" onclick="loadData(true)"><span class="sb-icon">↻</span>Refresh</div>
       <div class="sb-item" onclick="exportExcel()"><span class="sb-icon">📥</span>Export Excel</div>
       <div class="sb-item" onclick="exportPDF()"><span class="sb-icon">📄</span>Export PDF</div>
       <div class="sb-item" onclick="printView()"><span class="sb-icon">🖨️</span>Print View</div>
@@ -1073,12 +1065,13 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <table class="adm-table">
         <thead><tr>
           <th style="width:32px;"><input type="checkbox" id="admSelectAllChk" onclick="toggleAdmSelectAll(this)"></th>
+          <th style="width:32px;">SL</th>
           <th>Req ID</th><th>Vehicle Code</th><th>Officer</th>
           <th>Territory</th><th>Date</th><th>Status</th>
           <th>Mgr Remark</th><th>Action</th>
         </tr></thead>
         <tbody id="admReqTableBody">
-          <tr><td colspan="9" class="adm-empty">Loading requisitions...</td></tr>
+          <tr><td colspan="10" class="adm-empty">Loading requisitions...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1140,7 +1133,48 @@ function jsonpFetch(url,extraParams){
 // ── SHEET 1 / SHEET 2 — now routed through the session-gated Auth.gs actions
 // instead of the old static-token URLs. A valid login is required for either
 // of these to return anything at all.
-function fetchSheet1(){ return authFetch(AUTH_URL, {action:'getSheet1Data'}); }
+//
+// Sheet1 is also cached in sessionStorage (short TTL, stale-while-revalidate):
+// this is the single biggest, slowest fetch in the whole app (~8,000 rows),
+// so on every login/navigation after the first, a recent cached copy paints
+// instantly while a fresh copy quietly loads in the background and updates
+// the cache for next time. The explicit "Refresh" buttons pass forceRefresh
+// to guarantee they always get truly live data, never a stale cached copy.
+const SHEET1_CACHE_KEY  = 'aci_sheet1_cache';
+const SHEET1_CACHE_TIME = 'aci_sheet1_cache_time';
+const SHEET1_CACHE_TTL  = 3 * 60 * 1000; // 3 minutes
+
+function getCachedSheet1(){
+  try{
+    var t = sessionStorage.getItem(SHEET1_CACHE_TIME);
+    if(!t || (Date.now() - parseInt(t,10)) > SHEET1_CACHE_TTL) return null;
+    var raw = sessionStorage.getItem(SHEET1_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function setCachedSheet1(data){
+  try{
+    sessionStorage.setItem(SHEET1_CACHE_KEY, JSON.stringify(data));
+    sessionStorage.setItem(SHEET1_CACHE_TIME, String(Date.now()));
+  }catch(e){ /* sessionStorage full or unavailable — just skip caching */ }
+}
+
+function fetchSheet1(forceRefresh){
+  if(!forceRefresh){
+    var cached = getCachedSheet1();
+    if(cached){
+      // Quietly refresh in the background so the cache doesn't go stale
+      authFetch(AUTH_URL, {action:'getSheet1Data'}).then(function(fresh){
+        if(Array.isArray(fresh)) setCachedSheet1(fresh);
+      }).catch(function(){});
+      return Promise.resolve(cached);
+    }
+  }
+  return authFetch(AUTH_URL, {action:'getSheet1Data'}).then(function(d){
+    if(Array.isArray(d)) setCachedSheet1(d);
+    return d;
+  });
+}
 function fetchSheet2(){ return authFetch(AUTH_URL, {action:'getSheet2Data'}); }
 
 // ── SHEET 2 HELPERS ───────────────────────────────────────────────────────────
@@ -1193,12 +1227,12 @@ async function searchSheet2(q,limit=12){
 }
 
 // LOAD DASHBOARD DATA
-async function loadData(){
+async function loadData(forceRefresh){
   setSS('Syncing...','#D97706');
   document.getElementById('errBar').style.display='none';
   document.getElementById('tbody').innerHTML='<tr><td colspan="13" class="empty">Loading...</td></tr>';
   try{
-    const d=await fetchSheet1();
+    const d=await fetchSheet1(forceRefresh);
     if(!Array.isArray(d))throw new Error('Unexpected data format from Sheet 1.');
     all=d;buildRv();goFilter();updateKPIs();
     const t=new Date().toLocaleTimeString();
@@ -1232,11 +1266,11 @@ function updateKPIs(){
 }
 
 // LOAD PREFACE DATA
-async function loadPreface(){
+async function loadPreface(forceRefresh){
   document.getElementById('pfDot').style.background='#D97706';
   document.getElementById('pfSync').textContent='Connecting...';
   try{
-    const d=await fetchSheet1();
+    const d=await fetchSheet1(forceRefresh);
     if(!Array.isArray(d))throw new Error('Unexpected data format from Sheet 1.');
     all=d;const n=d.length;
     const sd=d.filter(r=>{const s=String(r['Status']||'').toLowerCase().trim();return s==='sent'||s==='delivered';}).length;
@@ -1253,8 +1287,8 @@ async function loadPreface(){
     ['pfRec','pfRec2'].forEach(id=>document.getElementById(id).textContent=n+' records');
     document.getElementById('pfSync').textContent='Synced '+t;
     document.getElementById('pfDot').style.background='#059669';
-    // Donut chart — all records grouped by region code
-    buildDonutChart(d);
+    // Monthly manager-approved / completed stats (replaces the old showroom donut)
+    loadApprovalStats();
     // Bar chart
     // Build monthly data with records stored for click access
     const mc={};const mcRecs={};
@@ -1290,6 +1324,71 @@ async function loadPreface(){
     document.getElementById('pfSync').textContent='Error: '+e.message;
     document.getElementById('pfDot').style.background='#DC2626';
   }
+}
+
+
+// ── MONTHLY APPROVAL / COMPLETION STATS (replaces the old showroom donut) ────
+async function loadApprovalStats(){
+  var el = document.getElementById('approvalStatsBody');
+  if(!el) return;
+  try{
+    var result = await authFetch(AUTH_URL, {action:'getAllRequisitions'});
+    if(result.error) throw new Error(result.error);
+    el.innerHTML = buildApprovalStatsCard(result.rows || []);
+  }catch(e){
+    el.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load stats.</div>';
+  }
+}
+
+function buildApprovalStatsCard(requisitions){
+  // Group by month: how many were manager-approved that month, how many
+  // were completed that month, and the average working days from approval
+  // to completion (only counted once a requisition is actually Completed).
+  var monthly = {};
+  function bucket(k){
+    if(!monthly[k]) monthly[k] = {approved:0, completed:0, totalDays:0, withDates:0};
+    return monthly[k];
+  }
+
+  requisitions.forEach(function(r){
+    var apprStr = r['ManagerApprovedDate'];
+    if(apprStr){
+      var ad = new Date(apprStr);
+      if(!isNaN(ad.getTime())){
+        bucket(MONTHS[ad.getMonth()]+' '+String(ad.getFullYear()).slice(2)).approved++;
+      }
+    }
+    if(r['Status'] === 'Completed' && apprStr && r['LastUpdated']){
+      var ad2 = new Date(apprStr);
+      var cd2 = new Date(r['LastUpdated']);
+      if(!isNaN(ad2.getTime()) && !isNaN(cd2.getTime())){
+        var b = bucket(MONTHS[cd2.getMonth()]+' '+String(cd2.getFullYear()).slice(2));
+        b.completed++;
+        b.totalDays += countWorkingDays(ad2, cd2);
+        b.withDates++;
+      }
+    }
+  });
+
+  var entries = Object.entries(monthly).sort(function(a,b){
+    var pa=a[0].split(' '), pb=b[0].split(' ');
+    var ya=parseInt(pa[1]), yb=parseInt(pb[1]), ma=MONTHS.indexOf(pa[0]), mb=MONTHS.indexOf(pb[0]);
+    return ya!==yb ? ya-yb : ma-mb;
+  }).slice(-8);
+
+  if(!entries.length) return '<div style="font-size:11px;color:var(--text3);">No manager-approved requisitions yet.</div>';
+
+  return entries.map(function(e){
+    var m = e[0], v = e[1];
+    var avg = v.withDates ? Math.round(v.totalDays / v.withDates) : null;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bg);">' +
+      '<div style="font-size:12px;font-weight:800;color:var(--navy);min-width:56px;">'+m+'</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;">' +
+      '<span style="background:var(--blue-bg);color:#1E40AF;font-weight:700;padding:3px 9px;border-radius:99px;">'+v.approved+' approved</span>' +
+      '<span style="background:var(--mint-bg);color:#065F46;font-weight:700;padding:3px 9px;border-radius:99px;">'+v.completed+' completed</span>' +
+      (avg!==null ? '<span style="background:var(--amber-bg);color:#92400E;font-weight:700;padding:3px 9px;border-radius:99px;">'+avg+' day'+(avg===1?'':'s')+' avg</span>' : '') +
+      '</div></div>';
+  }).join('');
 }
 
 
@@ -2769,7 +2868,7 @@ function renderFFRequisitions(){
     }
     var html = '<div class="ff-req-item" onclick="showReqDetail(window._reqMap[' + i + '])">';
     html += '<div class="ff-req-top">';
-    html += '<div class="ff-req-id">' + (r['RequisitionId']||'-') + '</div>';
+    html += '<div class="ff-req-id"><span style="color:var(--text3);font-weight:700;">#' + (i+1) + '</span> ' + (r['RequisitionId']||'-') + '</div>';
     html += '<span class="req-status ' + bc + '">' + (r['Status']||'Pending') + '</span>';
     html += '</div>';
     html += '<div class="ff-req-code">' + (r['VehicleCode']||'-') + '</div>';
@@ -3163,7 +3262,7 @@ function renderMgrRequisitions(){
 
     var html = '<div class="mgr-req-item">';
     html += '<div class="mgr-req-top">';
-    html += '<div class="mgr-req-id">'+(r['RequisitionId']||'-')+'</div>';
+    html += '<div class="mgr-req-id"><span style="color:var(--text3);font-weight:700;">#'+(i+1)+'</span> '+(r['RequisitionId']||'-')+'</div>';
     html += '<span class="req-status '+bc+'">'+(r['Status']||'Pending')+'</span>';
     html += '</div>';
     html += '<div class="mgr-req-officer">'+(r['OfficerName']||'-')+'</div>';
@@ -3324,7 +3423,7 @@ function hideAdminReqPanel(){
 
 async function loadAdmRequisitions(){
   document.getElementById('admReqTableBody').innerHTML =
-    '<tr><td colspan="9" class="adm-empty">Loading...</td></tr>';
+    '<tr><td colspan="10" class="adm-empty">Loading...</td></tr>';
   try{
     var result = await authFetch(AUTH_URL, {
       action: 'getAllRequisitions',
@@ -3334,7 +3433,7 @@ async function loadAdmRequisitions(){
     filterAdmRequisitions();
   }catch(e){
     document.getElementById('admReqTableBody').innerHTML =
-      '<tr><td colspan="9" class="adm-empty">Could not load. Check connection.</td></tr>';
+      '<tr><td colspan="10" class="adm-empty">Could not load. Check connection.</td></tr>';
   }
 }
 
@@ -3388,7 +3487,7 @@ function filterAdmRequisitions(){
 function renderAdmTable(rows){
   var tbody = document.getElementById('admReqTableBody');
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="9" class="adm-empty">No requisitions found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="adm-empty">No requisitions found.</td></tr>';
     updateAdmBulkBar();
     return;
   }
@@ -3436,6 +3535,7 @@ function renderAdmTable(rows){
     var checked = admSelected.has(String(r['RequisitionId']||'')) ? ' checked' : '';
     return '<tr class="'+rowClass.trim()+'" onclick="admViewDetail(window._admRowMap['+i+'])" style="cursor:pointer;">' +
       '<td onclick="event.stopPropagation();"><input type="checkbox" class="adm-row-chk" data-reqid="'+(r['RequisitionId']||'')+'" onclick="toggleAdmRowSelect(this)"'+checked+'></td>' +
+      '<td style="font-size:11px;color:var(--text3);font-weight:700;">'+(i+1)+'</td>' +
       '<td style="font-size:11px;font-weight:700;">'+(r['RequisitionId']||'-')+'</td>' +
       '<td style="color:var(--blue);font-weight:700;">'+(r['VehicleCode']||'-')+'</td>' +
       '<td>'+(r['OfficerName']||'-')+'</td>' +
@@ -3531,9 +3631,9 @@ async function bulkAdmUpdateStatus(newStatus){
   }
 }
 
+// Only ever called for "Complete" now — Process moved to admProcessWithRemark()
 function admUpdateStatusByIdx(idx, statusCode){
-  var statuses = ['Admin Processing', 'Completed'];
-  admUpdateStatus(idx, statuses[statusCode]);
+  admUpdateStatus(idx, 'Completed');
 }
 
 // ── PROCESS WITH OPTIONAL REMARK ──────────────────────────────────────────────
@@ -3583,13 +3683,18 @@ function admEditRemarkModal(idx){
     '<div class="req-detail-item"><div class="req-detail-label">Requisition ID</div><div class="req-detail-value" style="font-size:11px;">'+(r['RequisitionId']||'-')+'</div></div>' +
     '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
     '</div>' +
+    '<label class="ff-remarks-label">Status</label>' +
+    '<select class="ff" id="admRemarkStatusSelect" style="width:100%;margin-bottom:12px;padding:10px 12px;font-size:13px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--navy);font-family:\'Inter\',sans-serif;">' +
+    '<option value="Admin Processing">Keep in Admin Processing</option>' +
+    '<option value="Pending">Found an issue — send back to Pending</option>' +
+    '</select>' +
     '<label class="ff-remarks-label">Remark — e.g. missing father\'s name, mobile number, or other issue</label>' +
     '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminRemark']||'')+'</textarea>' +
     '<div id="admRemarkErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;"></div>' +
     '</div>' +
     '<div class="rec-foot">' +
     '<button class="rec-btn rec-btn-close" onclick="closeModal()">Cancel</button>' +
-    '<button class="rec-btn rec-btn-save" id="admRemarkBtn" onclick="admSubmitRemark()">Save Remark</button>' +
+    '<button class="rec-btn rec-btn-save" id="admRemarkBtn" onclick="admSubmitRemark()">Save</button>' +
     '</div></div></div>';
 }
 
@@ -3607,6 +3712,7 @@ async function admSubmitRemark(){
 
   try{
     var result;
+    var selectedStatus = null;
     if(mode === 'process'){
       result = await authFetch(AUTH_URL, {
         action: 'updateRequisitionStatus',
@@ -3617,26 +3723,40 @@ async function admSubmitRemark(){
         adminRemark: remark
       });
     } else {
-      result = await authFetch(AUTH_URL, {
-        action: 'updateAdminRemark',
-        requisitionId: r['RequisitionId'],
-        adminRemark: remark
-      });
+      selectedStatus = document.getElementById('admRemarkStatusSelect').value;
+      if(selectedStatus === 'Pending'){
+        result = await authFetch(AUTH_URL, {
+          action: 'updateRequisitionStatus',
+          requisitionId: r['RequisitionId'],
+          newStatus: 'Pending',
+          managerUsername: SESSION.username,
+          managerRemark: r['ManagerRemark']||'',
+          adminRemark: remark
+        });
+      } else {
+        result = await authFetch(AUTH_URL, {
+          action: 'updateAdminRemark',
+          requisitionId: r['RequisitionId'],
+          adminRemark: remark
+        });
+      }
     }
     if(result.error){
       errEl.textContent = result.error;
       errEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = mode==='process' ? 'Confirm — Move to Processing' : 'Save Remark';
+      btn.disabled = false; btn.textContent = mode==='process' ? 'Confirm — Move to Processing' : 'Save';
     } else {
       admAllRequisitions.forEach(function(req){
         if(req['RequisitionId']===r['RequisitionId']){
           req['AdminRemark'] = remark;
           if(mode === 'process') req['Status'] = 'Admin Processing';
+          else if(selectedStatus === 'Pending'){ req['Status'] = 'Pending'; req['ManagerApprovedDate'] = ''; }
         }
       });
       closeModal();
       filterAdmRequisitions();
-      showFFToast(mode==='process' ? 'Moved to Admin Processing.' : 'Remark saved.');
+      var toastMsg = mode==='process' ? 'Moved to Admin Processing.' : (selectedStatus==='Pending' ? 'Sent back to Pending.' : 'Remark saved.');
+      showFFToast(toastMsg);
     }
   }catch(e){
     errEl.textContent = 'Connection error. Please try again.';
