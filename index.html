@@ -2970,12 +2970,12 @@ function buildCountdownHTML(r){
   // If admin has flagged an issue while this is still in Admin Processing,
   // show that instead of the countdown — the clock is effectively on hold
   // until the issue is resolved and the remark is cleared.
-  if(status === 'Admin Processing' && r['AdminRemark']){
+  if(status === 'Admin Processing' && r['AdminOnHoldNote']){
     return '<div class="wd-countdown warn">' +
       '<div class="wd-icon">⏸️</div>' +
       '<div class="wd-info">' +
       '<div class="wd-days warn">On Hold</div>' +
-      '<div class="wd-label">Deadline tracking paused — <strong>' + r['AdminRemark'] + '</strong></div>' +
+      '<div class="wd-label">Deadline tracking paused — <strong>' + r['AdminOnHoldNote'] + '</strong></div>' +
       '</div></div>';
   }
 
@@ -3516,7 +3516,7 @@ function renderAdmTable(rows){
       action = '<button class="adm-action-btn adm-btn-process" onclick="admProcessWithRemark('+i+')">Process</button>';
     } else if(status === 'Admin Processing'){
       action = '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">Complete</button>' +
-        ' <button class="adm-action-btn" style="background:var(--bg);color:var(--navy);border:1.5px solid var(--border);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminRemark']?' Edit':' Remark')+'</button>';
+        ' <button class="adm-action-btn" style="background:var(--bg);color:var(--navy);border:1.5px solid var(--border);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminOnHoldNote']?' Edit':' Remark')+'</button>';
     } else {
       action = '<span style="font-size:11px;color:var(--text3);">—</span>';
     }
@@ -3524,13 +3524,13 @@ function renderAdmTable(rows){
     // Highlight rows nearing/past the 20-working-day deadline (15+ days
     // elapsed since manager approval), so they're easy to spot in the list
     // without opening each one. Also show total duration once Completed.
-    // If admin has flagged an issue (AdminRemark set) while still in Admin
+    // If admin has flagged an issue (AdminOnHoldNote set) while still in Admin
     // Processing, the deadline highlight is paused — an "On Hold" note shows
     // instead, since a known blocking issue shouldn't keep nagging as overdue.
     var rowClass = '';
     var statusSub = '';
     var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
-    if(status === 'Admin Processing' && r['AdminRemark']){
+    if(status === 'Admin Processing' && r['AdminOnHoldNote']){
       rowClass = ' adm-row-onhold';
       statusSub = '<div style="font-size:9px;color:#92400E;font-weight:700;margin-top:2px;">⏸️ On Hold</div>';
     } else if(status === 'Admin Processing' && approvedDateStr){
@@ -3675,7 +3675,7 @@ function admProcessWithRemark(idx){
     '<div class="req-detail-item"><div class="req-detail-label">Vehicle Code</div><div class="req-detail-value" style="color:var(--blue);">'+(r['VehicleCode']||'-')+'</div></div>' +
     '</div>' +
     '<label class="ff-remarks-label">Remark (optional) — e.g. missing father\'s name, mobile number, or other issue</label>' +
-    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminRemark']||'')+'</textarea>' +
+    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminOnHoldNote']||'')+'</textarea>' +
     '<div id="admRemarkErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;"></div>' +
     '</div>' +
     '<div class="rec-foot">' +
@@ -3709,7 +3709,7 @@ function admEditRemarkModal(idx){
     '<option value="Pending">Found an issue — send back to Pending</option>' +
     '</select>' +
     '<label class="ff-remarks-label">Remark — e.g. missing father\'s name, mobile number, or other issue</label>' +
-    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminRemark']||'')+'</textarea>' +
+    '<textarea class="remark-input" id="admRemarkInput">'+(r['AdminOnHoldNote']||'')+'</textarea>' +
     '<div id="admRemarkErr" style="display:none;background:var(--red-bg);border:1px solid var(--red-soft);border-radius:8px;padding:9px 14px;font-size:12px;color:var(--red);font-weight:600;"></div>' +
     '</div>' +
     '<div class="rec-foot">' +
@@ -3768,7 +3768,7 @@ async function admSubmitRemark(){
     } else {
       admAllRequisitions.forEach(function(req){
         if(req['RequisitionId']===r['RequisitionId']){
-          req['AdminRemark'] = remark;
+          req['AdminOnHoldNote'] = remark;
           if(mode === 'process') req['Status'] = 'Admin Processing';
           else if(selectedStatus === 'Pending'){ req['Status'] = 'Pending'; req['ManagerApprovedDate'] = ''; }
           else if(selectedStatus === 'Completed'){ req['Status'] = 'Completed'; }
