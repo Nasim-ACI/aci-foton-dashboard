@@ -166,6 +166,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .adm-table tr.adm-row-urgent:hover td{background:#FDE68A;}
 .adm-table tr.adm-row-expired td{background:var(--red-bg);}
 .adm-table tr.adm-row-expired:hover td{background:#FECACA;}
+.adm-table tr.adm-row-onhold td{background:#FFFBEB;}
+.adm-table tr.adm-row-onhold:hover td{background:#FEF3C7;}
 .adm-action-btn{padding:5px 12px;border-radius:7px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .adm-btn-process{background:var(--blue);color:#fff;}
 .adm-btn-complete{background:var(--mint);color:#fff;}
@@ -2965,6 +2967,18 @@ function buildCountdownHTML(r){
   var status = r['Status'] || '';
   if(status === 'Pending' || status === 'Rejected') return '';
 
+  // If admin has flagged an issue while this is still in Admin Processing,
+  // show that instead of the countdown — the clock is effectively on hold
+  // until the issue is resolved and the remark is cleared.
+  if(status === 'Admin Processing' && r['AdminRemark']){
+    return '<div class="wd-countdown warn">' +
+      '<div class="wd-icon">⏸️</div>' +
+      '<div class="wd-info">' +
+      '<div class="wd-days warn">On Hold</div>' +
+      '<div class="wd-label">Deadline tracking paused — <strong>' + r['AdminRemark'] + '</strong></div>' +
+      '</div></div>';
+  }
+
   // Prefer the true recorded approval date; fall back to LastUpdated only for
   // older rows that predate the ManagerApprovedDate column being added.
   var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
@@ -3510,10 +3524,16 @@ function renderAdmTable(rows){
     // Highlight rows nearing/past the 20-working-day deadline (15+ days
     // elapsed since manager approval), so they're easy to spot in the list
     // without opening each one. Also show total duration once Completed.
+    // If admin has flagged an issue (AdminRemark set) while still in Admin
+    // Processing, the deadline highlight is paused — an "On Hold" note shows
+    // instead, since a known blocking issue shouldn't keep nagging as overdue.
     var rowClass = '';
     var statusSub = '';
     var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
-    if(status === 'Admin Processing' && approvedDateStr){
+    if(status === 'Admin Processing' && r['AdminRemark']){
+      rowClass = ' adm-row-onhold';
+      statusSub = '<div style="font-size:9px;color:#92400E;font-weight:700;margin-top:2px;">⏸️ On Hold</div>';
+    } else if(status === 'Admin Processing' && approvedDateStr){
       var apprDate = new Date(approvedDateStr);
       if(!isNaN(apprDate.getTime())){
         var today2 = new Date(); today2.setHours(23,59,59,0);
@@ -3684,7 +3704,8 @@ function admEditRemarkModal(idx){
     '</div>' +
     '<label class="ff-remarks-label">Status</label>' +
     '<select class="ff" id="admRemarkStatusSelect" style="width:100%;margin-bottom:12px;padding:10px 12px;font-size:13px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--navy);font-family:\'Inter\',sans-serif;">' +
-    '<option value="Admin Processing">Keep in Admin Processing</option>' +
+    '<option value="Admin Processing">Keep in Admin Processing (on hold)</option>' +
+    '<option value="Completed">Mark as Completed</option>' +
     '<option value="Pending">Found an issue — send back to Pending</option>' +
     '</select>' +
     '<label class="ff-remarks-label">Remark — e.g. missing father\'s name, mobile number, or other issue</label>' +
@@ -3723,11 +3744,11 @@ async function admSubmitRemark(){
       });
     } else {
       selectedStatus = document.getElementById('admRemarkStatusSelect').value;
-      if(selectedStatus === 'Pending'){
+      if(selectedStatus === 'Pending' || selectedStatus === 'Completed'){
         result = await authFetch(AUTH_URL, {
           action: 'updateRequisitionStatus',
           requisitionId: r['RequisitionId'],
-          newStatus: 'Pending',
+          newStatus: selectedStatus,
           managerUsername: SESSION.username,
           managerRemark: r['ManagerRemark']||'',
           adminRemark: remark
@@ -3750,11 +3771,15 @@ async function admSubmitRemark(){
           req['AdminRemark'] = remark;
           if(mode === 'process') req['Status'] = 'Admin Processing';
           else if(selectedStatus === 'Pending'){ req['Status'] = 'Pending'; req['ManagerApprovedDate'] = ''; }
+          else if(selectedStatus === 'Completed'){ req['Status'] = 'Completed'; }
         }
       });
       closeModal();
       filterAdmRequisitions();
-      var toastMsg = mode==='process' ? 'Moved to Admin Processing.' : (selectedStatus==='Pending' ? 'Sent back to Pending.' : 'Remark saved.');
+      var toastMsg = mode==='process' ? 'Moved to Admin Processing.'
+        : selectedStatus==='Pending' ? 'Sent back to Pending.'
+        : selectedStatus==='Completed' ? 'Marked as Completed.'
+        : 'On-hold note saved.';
       showFFToast(toastMsg);
     }
   }catch(e){
