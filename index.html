@@ -156,7 +156,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .adm-search{flex:1;min-width:180px;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-family:'Inter',sans-serif;color:var(--navy);outline:none;}
 .adm-search:focus{border-color:var(--blue);background:var(--white);}
 .adm-export-btn{background:var(--blue);border:none;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;}
-.adm-table-wrap{background:var(--white);border-radius:var(--radius);border:2px solid var(--border);overflow:hidden;box-shadow:var(--shadow);}
+.adm-table-wrap{background:var(--white);border-radius:var(--radius);border:2px solid var(--border);overflow-x:auto;box-shadow:var(--shadow);}
 .adm-table{width:100%;border-collapse:collapse;font-size:12px;}
 .adm-table th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;}
 .adm-table td{padding:10px 12px;border-bottom:1px solid var(--bg);color:var(--navy);font-weight:500;vertical-align:middle;}
@@ -3515,8 +3515,10 @@ function renderAdmTable(rows){
     if(status === 'Manager Approved'){
       action = '<button class="adm-action-btn adm-btn-process" onclick="admProcessWithRemark('+i+')">Process</button>';
     } else if(status === 'Admin Processing'){
-      action = '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">Complete</button>' +
-        ' <button class="adm-action-btn" style="background:var(--bg);color:var(--navy);border:1.5px solid var(--border);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminOnHoldNote']?' Edit':' Remark')+'</button>';
+      action = '<div style="display:flex;flex-direction:column;gap:5px;min-width:90px;">' +
+        '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">✓ Complete</button>' +
+        '<button class="adm-action-btn" style="background:var(--amber-bg);color:#92400E;border:1.5px solid var(--amber-soft);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminOnHoldNote']?' Edit Remark':' Add Remark')+'</button>' +
+        '</div>';
     } else {
       action = '<span style="font-size:11px;color:var(--text3);">—</span>';
     }
