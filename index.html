@@ -141,6 +141,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 #ffHome.active{display:block;}
 #mgrHome{display:none;min-height:100vh;background:var(--bg);}
 #mgrHome.active{display:block;}
+#hqHome{display:none;min-height:100vh;background:var(--bg);}
+#hqHome.active{display:block;}
 #adminReqPanel{display:none;padding:20px;max-width:1200px;margin:0 auto;}
 #adminReqPanel.active{display:block;}
 .adm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
@@ -660,11 +662,12 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     </div>
     <div class="lock-icon">🔐</div>
     <div class="lock-title">Authorized Access Only</div>
-    <div class="lock-sub">Ownership Papers Database — Field Force, Manager & Admin</div>
+    <div class="lock-sub">Ownership Papers Database — Field Force, Manager, Admin & HQ</div>
     <div class="role-tabs">
       <button class="role-tab active" id="tab-field" onclick="switchRole('field')">👤 Field Force</button>
       <button class="role-tab" id="tab-manager" onclick="switchRole('manager')">🗂 Manager</button>
       <button class="role-tab" id="tab-admin" onclick="switchRole('admin')">⚙️ Admin</button>
+      <button class="role-tab" id="tab-hq" onclick="switchRole('hq')">🏢 HQ</button>
     </div>
     <div class="lock-err" id="lockErr"></div>
     <div class="lock-success" id="lockSuccess"></div>
@@ -881,6 +884,61 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <button class="mgr-filter-btn" id="mgrFilterAll" onclick="mgrSetFilter('All')">All</button>
     </div>
     <div class="ff-req-list" id="mgrReqList"><div class="ff-empty">Loading requisitions...</div></div>
+  </div>
+</div>
+
+<!-- HQ HOME — read-only statistics, no edit/export/requisition-management -->
+<div id="hqHome">
+  <div class="ff-topbar">
+    <div class="ff-brand">
+      <div class="ff-brand-logo ff-brand-logo-a">FOTON</div>
+      <div class="ff-brand-logo ff-brand-logo-b">ACI</div>
+    </div>
+    <div class="ff-user-info">
+      <div class="ff-avatar" style="background:#7C3AED;">H</div>
+      <div><div class="ff-uname" id="hqUserName">HQ</div><div class="ff-urole">Statistics Overview</div></div>
+      <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
+      <button class="tbtn" onclick="logout()">🔒 Logout</button>
+    </div>
+  </div>
+  <div class="pf-body" style="padding:16px;">
+    <div class="ff-welcome" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);margin-bottom:16px;">
+      <div class="ff-welcome-name" id="hqWelcomeName">Welcome</div>
+      <div class="ff-welcome-meta"><span>Read-only overview — Total & monthly statistics</span></div>
+    </div>
+
+    <div class="pf-kpi-row" style="margin-bottom:16px;">
+      <div class="pf-kpi c-blue"><div class="pf-kpi-icon">📋</div><div class="pf-kpi-val" id="hqKpiTotal">—</div><div class="pf-kpi-lbl">Total Records</div><div class="pf-kpi-sub">All entries</div></div>
+      <div class="pf-kpi c-mint"><div class="pf-kpi-icon">✅</div><div class="pf-kpi-val" id="hqKpiSent">—</div><div class="pf-kpi-lbl">Sent / Delivered</div><div class="pf-kpi-sub">Dispatched</div></div>
+      <div class="pf-kpi c-amber"><div class="pf-kpi-icon">✏️</div><div class="pf-kpi-val" id="hqKpiNameChange">—</div><div class="pf-kpi-lbl">Name Change</div><div class="pf-kpi-sub">Exception</div></div>
+      <div class="pf-kpi c-red"><div class="pf-kpi-icon">🔄</div><div class="pf-kpi-val" id="hqKpiResent">—</div><div class="pf-kpi-lbl">Resent / Re-Issue</div><div class="pf-kpi-sub">Flagged</div></div>
+    </div>
+
+    <div class="pf-mid" style="margin-bottom:0;">
+      <div class="pf-card">
+        <div class="pf-bar-header">
+          <div>
+            <div class="pf-card-title">📅 Monthly Sent Record</div>
+            <div class="pf-card-sub">Courier dispatched per month</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="pf-bar-total" id="hqBarTot">—</div>
+            <div class="pf-bar-unit">total units</div>
+          </div>
+        </div>
+        <div class="pf-bar-chart" id="hqBarChart"><div style="font-size:12px;color:var(--text3);">Loading...</div></div>
+      </div>
+
+      <div class="pf-card">
+        <div class="pf-card-title">📈 Requisition Approval Stats</div>
+        <div class="pf-card-sub">Manager-approved & completed counts per month, with average processing time</div>
+        <div id="hqApprovalStatsBody" style="max-height:250px;overflow-y:auto;">
+          <div style="font-size:11px;color:var(--text3);">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:center;">Last updated: <span id="hqLastSync" style="font-weight:700;color:var(--text2);">—</span></div>
   </div>
 </div>
 
@@ -1338,6 +1396,67 @@ async function loadApprovalStats(){
     el.innerHTML = buildApprovalStatsCard(result.rows || []);
   }catch(e){
     el.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load stats.</div>';
+  }
+}
+
+// ── HQ PANEL — read-only overview. Reuses the same Sheet1 KPI/bar-chart logic
+// and the same buildApprovalStatsCard() used on the Admin Preface page, so
+// none of this logic is duplicated — just rendered into HQ's own screen.
+async function loadHQPanel(){
+  try{
+    const d = await fetchSheet1();
+    if(!Array.isArray(d)) throw new Error('Unexpected data format from Sheet 1.');
+    all = d;
+    const n  = d.length;
+    const sd = d.filter(r=>{const s=String(r['Status']||'').toLowerCase().trim();return s==='sent'||s==='delivered';}).length;
+    const nc = d.filter(r=>String(r['Status']||'').toLowerCase().includes('name change')).length;
+    const ri = d.filter(r=>{const s=String(r['Status']||'').toLowerCase();return s.includes('resent')||s.includes('reissue')||s.includes('re-issue');}).length;
+
+    document.getElementById('hqKpiTotal').textContent = n;
+    document.getElementById('hqKpiSent').textContent = sd;
+    document.getElementById('hqKpiNameChange').textContent = nc;
+    document.getElementById('hqKpiResent').textContent = ri;
+    document.getElementById('hqLastSync').textContent = new Date().toLocaleString();
+
+    // Monthly sent history bar chart (same logic as the admin Preface page)
+    const mc = {};
+    d.forEach(r=>{
+      const st = String(r['Status']||'').toLowerCase().trim();
+      if(st==='sent'||st==='delivered'||st.includes('resent')||st.includes('reissue')){
+        const dt = new Date(String(r['Date of Courier']||''));
+        if(!isNaN(dt.getTime())){
+          const k = MONTHS[dt.getMonth()]+' '+String(dt.getFullYear()).slice(2);
+          mc[k] = (mc[k]||0)+1;
+        }
+      }
+    });
+    const entries = Object.entries(mc).sort((a,b)=>{
+      const pa=a[0].split(' '), pb=b[0].split(' ');
+      const ya=parseInt(pa[1]), yb=parseInt(pb[1]), ma=MONTHS.indexOf(pa[0]), mb=MONTHS.indexOf(pb[0]);
+      return ya!==yb ? ya-yb : ma-mb;
+    }).slice(-8);
+    const maxV = entries.length ? Math.max(...entries.map(e=>e[1])) : 1;
+    const gt = entries.reduce((s,e)=>s+e[1],0);
+    document.getElementById('hqBarTot').textContent = gt||'0';
+    document.getElementById('hqBarChart').innerHTML = entries.length ? entries.map(([m,v],i)=>
+      '<div class="pf-bar-col">' +
+      '<div class="pf-bar-v">'+v+'</div>' +
+      '<div class="pf-bar-wrap"><div class="pf-bar-fill" style="height:'+Math.round(v/maxV*100)+'%;background:'+BAR_C[i%BAR_C.length]+';"></div></div>' +
+      '<div class="pf-bar-m">'+m+'</div>' +
+      '</div>'
+    ).join('') : '<div style="font-size:11px;color:var(--text3);">No data</div>';
+  }catch(e){
+    document.getElementById('hqBarChart').innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load data.</div>';
+  }
+
+  // Requisition approval stats — same underlying function as Admin's Preface
+  var statsEl = document.getElementById('hqApprovalStatsBody');
+  try{
+    var result = await authFetch(AUTH_URL, {action:'getAllRequisitions'});
+    if(result.error) throw new Error(result.error);
+    statsEl.innerHTML = buildApprovalStatsCard(result.rows || []);
+  }catch(e){
+    statsEl.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load stats.</div>';
   }
 }
 
@@ -2260,7 +2379,7 @@ function ffSetFilter(filter){
 }
 function switchRole(role){
   currentRole = role;
-  ['field','manager','admin'].forEach(r=>{
+  ['field','manager','admin','hq'].forEach(r=>{
     document.getElementById('tab-'+r).classList.toggle('active', r===role);
   });
   const lbl = document.getElementById('loginIdLabel');
@@ -2273,6 +2392,10 @@ function switchRole(role){
     lbl.textContent = 'Manager Username';
     idInput.placeholder = 'Enter your username';
     idInput.setAttribute('inputmode','numeric');
+  } else if(role==='hq'){
+    lbl.textContent = 'HQ Username';
+    idInput.placeholder = 'Enter your HQ username';
+    idInput.setAttribute('inputmode','text');
   } else {
     lbl.textContent = 'Admin Username';
     idInput.placeholder = 'Enter admin username';
@@ -2462,10 +2585,10 @@ function onLoginSuccess(session){
   document.getElementById('lockAtt').style.display='none';
 
   // Preload Sheet1 in background for faster subsequent searches.
-  // Admin is excluded here because loadPreface() (called right below for
-  // admin) already fetches Sheet1 itself — without this, admin logins were
-  // firing two identical ~8,000-row requests to Apps Script at once.
-  if(session.role !== 'admin' && (!all || !all.length)){
+  // Admin and HQ are excluded here because their own load function (called
+  // right below) already fetches Sheet1 itself — without this, those logins
+  // were firing two identical ~8,000-row requests to Apps Script at once.
+  if(session.role !== 'admin' && session.role !== 'hq' && (!all || !all.length)){
     fetchSheet1().then(function(d){ if(Array.isArray(d)) all=d; }).catch(function(){});
   }
 
@@ -2473,6 +2596,12 @@ function onLoginSuccess(session){
     // Admin goes to existing preface + full dashboard
     document.getElementById('preface').classList.add('active');
     loadPreface();
+  } else if(session.role === 'hq'){
+    // HQ goes to a dedicated read-only statistics screen
+    document.getElementById('hqHome').classList.add('active');
+    document.getElementById('hqUserName').textContent = session.name || 'HQ';
+    document.getElementById('hqWelcomeName').textContent = 'Welcome, ' + (session.name||'HQ');
+    loadHQPanel();
   } else if(session.role === 'manager'){
     // Manager goes to approval panel
     document.getElementById('mgrHome').classList.add('active');
@@ -3898,7 +4027,7 @@ function logout(){
   if(!confirm('Are you sure you want to logout?')) return;
   clearSession();
   // Hide all screens
-  ['preface','dashboard','ffHome','mgrHome'].forEach(id=>{
+  ['preface','dashboard','ffHome','mgrHome','hqHome'].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.classList.remove('active'); el.style.display=''; }
   });
