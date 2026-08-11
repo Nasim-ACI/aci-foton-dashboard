@@ -896,7 +896,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     </div>
     <div class="ff-user-info">
       <div class="ff-avatar" style="background:#7C3AED;">H</div>
-      <div><div class="ff-uname" id="hqUserName">HQ</div><div class="ff-urole">Statistics Overview</div></div>
+      <div><div class="ff-uname" id="hqUserName">DGM</div><div class="ff-urole">DGM Panel — Statistics Overview</div></div>
       <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
       <button class="tbtn" onclick="logout()">🔒 Logout</button>
     </div>
@@ -904,7 +904,11 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
   <div class="pf-body" style="padding:16px;">
     <div class="ff-welcome" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);margin-bottom:16px;">
       <div class="ff-welcome-name" id="hqWelcomeName">Welcome</div>
-      <div class="ff-welcome-meta"><span>Read-only overview — Total & monthly statistics</span></div>
+      <div class="ff-welcome-meta"><span>DGM Panel — Read-only overview — Total &amp; monthly statistics</span></div>
+      <div style="margin-top:6px;position:relative;">
+        <input id="hqSearchInput" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" placeholder="🔍 Search code, name, registration, engine..." oninput="hqDoSearch()" onkeydown="if(event.key==='Escape'){this.value='';hqDoSearch();}" style="width:100%;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);border-radius:11px;padding:12px 16px;font-size:14px;color:#fff;font-family:'Inter',sans-serif;outline:none;box-sizing:border-box;"/>
+        <div id="hqSearchResults" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:2px solid var(--border);border-radius:11px;box-shadow:var(--shadow2);z-index:100;max-height:280px;overflow-y:auto;"></div>
+      </div>
     </div>
 
     <div class="pf-kpi-row" style="margin-bottom:16px;">
@@ -1419,7 +1423,7 @@ async function loadHQPanel(){
     document.getElementById('hqLastSync').textContent = new Date().toLocaleString();
 
     // Monthly sent history bar chart (same logic as the admin Preface page)
-    const mc = {};
+    const mc = {}; const mcRecs = {};
     d.forEach(r=>{
       const st = String(r['Status']||'').toLowerCase().trim();
       if(st==='sent'||st==='delivered'||st.includes('resent')||st.includes('reissue')){
@@ -1427,9 +1431,12 @@ async function loadHQPanel(){
         if(!isNaN(dt.getTime())){
           const k = MONTHS[dt.getMonth()]+' '+String(dt.getFullYear()).slice(2);
           mc[k] = (mc[k]||0)+1;
+          if(!mcRecs[k]) mcRecs[k]=[];
+          mcRecs[k].push(r);
         }
       }
     });
+    window._barMonthRecs = mcRecs; // shared with showMonthDetail()
     const entries = Object.entries(mc).sort((a,b)=>{
       const pa=a[0].split(' '), pb=b[0].split(' ');
       const ya=parseInt(pa[1]), yb=parseInt(pb[1]), ma=MONTHS.indexOf(pa[0]), mb=MONTHS.indexOf(pb[0]);
@@ -1439,7 +1446,7 @@ async function loadHQPanel(){
     const gt = entries.reduce((s,e)=>s+e[1],0);
     document.getElementById('hqBarTot').textContent = gt||'0';
     document.getElementById('hqBarChart').innerHTML = entries.length ? entries.map(([m,v],i)=>
-      '<div class="pf-bar-col">' +
+      '<div class="pf-bar-col" style="cursor:pointer;" onclick="showMonthDetail(\'' + m + '\')">' +
       '<div class="pf-bar-v">'+v+'</div>' +
       '<div class="pf-bar-wrap"><div class="pf-bar-fill" style="height:'+Math.round(v/maxV*100)+'%;background:'+BAR_C[i%BAR_C.length]+';"></div></div>' +
       '<div class="pf-bar-m">'+m+'</div>' +
@@ -1973,6 +1980,72 @@ function _pfRenderItems(matches,source){
       <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span>${isS2?'<span style="color:var(--blue);font-weight:700;">Not yet processed</span>':''}</div>
     </div>`;
   }).join('');
+}
+
+// ── DGM/HQ SEARCH — read-only: opens the vehicle detail popup directly,
+// never navigates to the editable Dashboard (DGM has no edit access).
+let _hqTimer=null;
+function hqDoSearch(){
+  clearTimeout(_hqTimer);
+  _hqTimer=setTimeout(_hqDoSearchNow,350);
+}
+async function _hqDoSearchNow(){
+  const q=document.getElementById('hqSearchInput').value.trim();
+  const rb=document.getElementById('hqSearchResults');
+  if(!q){rb.style.display='none';return;}
+  rb.style.display='block';
+  rb.innerHTML='<div style="padding:12px 14px;font-size:12px;color:var(--text3);">Searching…</div>';
+
+  const qUp = q.toUpperCase();
+  var s1matches = all.filter(r => String(r['Code']||'').toUpperCase() === qUp);
+  if(!s1matches.length){
+    s1matches = all.filter(r =>
+      String(r['Customer Name']||'').toUpperCase().includes(qUp) ||
+      String(r['Registration No']||'').toUpperCase().includes(qUp)
+    ).slice(0,12);
+  }
+  if(s1matches.length){
+    rb.innerHTML = s1matches.map(r=>_hqRenderItem(r,'sent')).join('');
+    return;
+  }
+
+  rb.innerHTML='<div style="padding:12px 14px;font-size:12px;color:var(--text3);">Not found in Sheet 1 — searching master vehicle list…</div>';
+  try{
+    const s2matches=await searchSheet2(q,12);
+    if(!s2matches.length){
+      rb.innerHTML='<div style="padding:12px 14px;font-size:12px;color:var(--text3);">Vehicle not found in either sheet.</div>';
+      return;
+    }
+    rb.innerHTML = s2matches.map(r=>_hqRenderItem(r,'alldata')).join('');
+  }catch(err){
+    rb.innerHTML='<div style="padding:12px 14px;font-size:12px;color:var(--red);">⚠ Could not search master list: '+err.message+'</div>';
+  }
+}
+
+function _hqRenderItem(r, src){
+  const st=String(r['Status']||''), l=st.toLowerCase();
+  const isS2 = src==='alldata';
+  let bc='background:var(--bg);color:var(--text2);';
+  if(isS2)bc='background:var(--blue-bg);color:#1E40AF;';
+  else if(l==='sent'||l.includes('deliver'))bc='background:var(--mint-bg);color:#065F46;';
+  else if(l.includes('pending'))bc='background:var(--amber-bg);color:#92400E;';
+  else if(l.includes('resent')||l.includes('reissue'))bc='background:var(--red-bg);color:#991B1B;';
+  else if(l.includes('name change'))bc='background:var(--lav-bg);color:#5B21B6;';
+  const badge=isS2?'📋 Master List':st||'—';
+  window['_hqResult_'+(r['Code']||r['CustomerCode']||'').replace(/[^A-Za-z0-9]/g,'')] = r;
+  const key = (r['Code']||r['CustomerCode']||'').replace(/[^A-Za-z0-9]/g,'');
+  const vTag = isS2 ? 'alldata' : 'sent';
+  return `<div class="pf-srch-item" onclick="hqShowVehicle('${key}','${vTag}')">
+    <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${badge}</span></div>
+    <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span></div>
+  </div>`;
+}
+
+function hqShowVehicle(key, srcTag){
+  var v = window['_hqResult_'+key];
+  if(!v) return;
+  v['_src'] = srcTag;
+  showVehicleDetailPopup(v);
 }
 
 // Sheet2 result click — show popup with vehicle info + "not yet processed" state
@@ -2600,7 +2673,7 @@ function onLoginSuccess(session){
     // HQ goes to a dedicated read-only statistics screen
     document.getElementById('hqHome').classList.add('active');
     document.getElementById('hqUserName').textContent = session.name || 'HQ';
-    document.getElementById('hqWelcomeName').textContent = 'Welcome, ' + (session.name||'HQ');
+    document.getElementById('hqWelcomeName').textContent = 'Welcome DGM ' + (session.name||'HQ');
     loadHQPanel();
   } else if(session.role === 'manager'){
     // Manager goes to approval panel
@@ -2650,9 +2723,9 @@ function openChangePasswordModal(){
 }
 
 async function submitChangePassword(){
-  var curr    = document.getElementById('cpCurrent').value;
-  var newPw   = document.getElementById('cpNew').value;
-  var confirm = document.getElementById('cpConfirm').value;
+  var curr    = document.getElementById('cpCurrent').value.trim();
+  var newPw   = document.getElementById('cpNew').value.trim();
+  var confirm = document.getElementById('cpConfirm').value.trim();
   var errEl   = document.getElementById('cpErr');
   var btn     = document.getElementById('cpSubmitBtn');
   errEl.style.display = 'none';
