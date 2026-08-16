@@ -1397,7 +1397,8 @@ async function loadApprovalStats(){
   try{
     var result = await authFetch(AUTH_URL, {action:'getAllRequisitions'});
     if(result.error) throw new Error(result.error);
-    el.innerHTML = buildApprovalStatsCard(result.rows || []);
+    allReqCache = result.rows || [];
+    el.innerHTML = buildApprovalStatsCard(allReqCache);
   }catch(e){
     el.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load stats.</div>';
   }
@@ -1461,7 +1462,8 @@ async function loadHQPanel(){
   try{
     var result = await authFetch(AUTH_URL, {action:'getAllRequisitions'});
     if(result.error) throw new Error(result.error);
-    statsEl.innerHTML = buildApprovalStatsCard(result.rows || []);
+    allReqCache = result.rows || [];
+    statsEl.innerHTML = buildApprovalStatsCard(allReqCache);
   }catch(e){
     statsEl.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load stats.</div>';
   }
@@ -1975,9 +1977,11 @@ function _pfRenderItems(matches,source){
     const badge=isS2?'📋 Master List':st||'—';
     const ai=isS2?-1:all.indexOf(r);
     const onclick=isS2?`pfClickS2Result(${JSON.stringify(r).replace(/'/g,"&#39;")})`:`pfClickResult(${ai})`;
+    const reqBadge = buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']);
     return`<div class="pf-srch-item" onclick="${onclick}">
       <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${badge}</span></div>
       <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span>${isS2?'<span style="color:var(--blue);font-weight:700;">Not yet processed</span>':''}</div>
+      ${reqBadge}
     </div>`;
   }).join('');
 }
@@ -2045,6 +2049,19 @@ function hqShowVehicle(key, srcTag){
   var v = window['_hqResult_'+key];
   if(!v) return;
   v['_src'] = srcTag;
+  var code = v['Code'] || v['CustomerCode'];
+  if(code && allReqCache.length){
+    var codeUp = String(code).toUpperCase();
+    var match = null;
+    for(var i=0; i<allReqCache.length; i++){
+      if(String(allReqCache[i]['VehicleCode']||'').toUpperCase() === codeUp) match = allReqCache[i];
+    }
+    if(match){
+      v['_reqStatus']   = match['Status'] || 'Pending';
+      v['_reqId']       = match['RequisitionId'] || '';
+      v['_reqOfficer']  = match['OfficerName'] || '';
+    }
+  }
   showVehicleDetailPopup(v);
 }
 
@@ -2346,6 +2363,7 @@ function showS2Popup(r){
           <div class="rec-field full"><div class="rec-label">Status</div>
             <div class="rec-value"><span style="background:var(--blue-bg);color:#1E40AF;border:2px solid var(--blue-soft);display:inline-block;padding:5px 14px;border-radius:99px;font-weight:800;font-size:12px;">Not Processed</span></div>
           </div>
+          <div class="rec-field full">${buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']) || '<div style="font-size:11px;color:var(--text3);">No requisition has been submitted for this vehicle yet.</div>'}</div>
         </div>
       </div>
       <div class="rec-foot">
@@ -2440,6 +2458,50 @@ let admCurrentFilter = 'All';
 let admAllRequisitions = [];
 let admCurrentSearch = '';
 let admSelected = new Set(); // RequisitionIds currently checked for bulk action
+
+// ── SHARED REQUISITION CACHE (for search result augmentation) ────────────────
+// Populated by loadApprovalStats() / loadHQPanel() — reusing the same
+// getAllRequisitions fetch those already make, no extra network call needed.
+let allReqCache = [];
+
+// Given a vehicle code, returns the most recent requisition's status as a
+// small HTML badge (or '' if no requisition exists for that code at all).
+// Shows elapsed working days for anything still in Admin Processing, matching
+// the same day-tracking already used elsewhere in the app.
+function buildReqStatusBadgeHTML(code){
+  if(!code || !allReqCache.length) return '';
+  var codeUp = String(code).toUpperCase();
+  var match = null;
+  for(var i=0; i<allReqCache.length; i++){
+    if(String(allReqCache[i]['VehicleCode']||'').toUpperCase() === codeUp) match = allReqCache[i];
+  }
+  if(!match) return '';
+
+  var status = match['Status'] || 'Pending';
+  var bc = 'background:var(--bg);color:var(--text2);';
+  if(status==='Pending') bc='background:var(--amber-bg);color:#92400E;';
+  else if(status==='Manager Approved') bc='background:var(--mint-bg);color:#065F46;';
+  else if(status==='Admin Processing') bc='background:var(--blue-bg);color:#1E40AF;';
+  else if(status==='Completed') bc='background:#F0FDF4;color:#14532D;';
+  else if(status==='Rejected') bc='background:var(--red-bg);color:var(--red);';
+
+  var extra = '';
+  if(status === 'Admin Processing' && match['AdminOnHoldNote']){
+    extra = ' — On Hold';
+  } else if(status === 'Admin Processing'){
+    var apprDateStr = match['ManagerApprovedDate'] || match['LastUpdated'] || match['SubmissionDate'];
+    if(apprDateStr){
+      var ad = new Date(apprDateStr);
+      if(!isNaN(ad.getTime())){
+        var today = new Date(); today.setHours(23,59,59,0);
+        var elapsed = countWorkingDays(ad, today);
+        extra = ' — ' + elapsed + ' day' + (elapsed===1?'':'s') + ' elapsed';
+      }
+    }
+  }
+
+  return '<div style="margin-top:4px;"><span style="'+bc+'font-size:10px;padding:2px 9px;border-radius:99px;font-weight:700;">📋 Requisition: '+status+extra+'</span></div>';
+}
 let mgrRequisitions = [];
 function ffSetFilter(filter){
   ffCurrentFilter = filter;
