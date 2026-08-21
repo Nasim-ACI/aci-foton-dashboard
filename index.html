@@ -102,6 +102,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .rs-pending{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
 .rs-approved{background:var(--mint-bg);color:#065F46;border:1px solid var(--mint-soft);}
 .rs-processing{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);}
+.rs-hold{background:var(--lav-bg);color:#5B21B6;border:1px solid var(--lav-soft);}
 .rs-completed{background:#F0FDF4;color:#14532D;border:1px solid #86EFAC;}
 .rs-rejected{background:var(--red-bg);color:var(--red);border:1px solid var(--red-soft);}
 .req-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
@@ -1109,6 +1110,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       <button class="adm-filter-btn" id="admFPending"           onclick="setAdmFilter('Pending')">Pending</button>
       <button class="adm-filter-btn" id="admFApproved"          onclick="setAdmFilter('Manager Approved')">Mgr Approved</button>
       <button class="adm-filter-btn" id="admFProcessing"        onclick="setAdmFilter('Admin Processing')">Processing</button>
+      <button class="adm-filter-btn" id="admFHold"              onclick="setAdmFilter('Admin Hold')">On Hold</button>
       <button class="adm-filter-btn" id="admFCompleted"         onclick="setAdmFilter('Completed')">Completed</button>
       <button class="adm-filter-btn" id="admFRejected"          onclick="setAdmFilter('Rejected')">Rejected</button>
     </div>
@@ -2482,11 +2484,12 @@ function buildReqStatusBadgeHTML(code){
   if(status==='Pending') bc='background:var(--amber-bg);color:#92400E;';
   else if(status==='Manager Approved') bc='background:var(--mint-bg);color:#065F46;';
   else if(status==='Admin Processing') bc='background:var(--blue-bg);color:#1E40AF;';
+  else if(status==='Admin Hold') bc='background:var(--lav-bg);color:#5B21B6;';
   else if(status==='Completed') bc='background:#F0FDF4;color:#14532D;';
   else if(status==='Rejected') bc='background:var(--red-bg);color:var(--red);';
 
   var extra = '';
-  if(status === 'Admin Processing' && match['AdminOnHoldNote']){
+  if(status === 'Admin Hold' || (status === 'Admin Processing' && match['AdminOnHoldNote'])){
     extra = ' — On Hold';
   } else if(status === 'Admin Processing'){
     var apprDateStr = match['ManagerApprovedDate'] || match['LastUpdated'] || match['SubmissionDate'];
@@ -3099,11 +3102,11 @@ function renderFFRequisitions(){
   const list=document.getElementById('ffReqList');
   document.getElementById('ffCardTotal').textContent     = ffRequisitions.length;
   document.getElementById('ffCardPending').textContent   = ffRequisitions.filter(r=>r['Status']==='Pending').length;
-  document.getElementById('ffCardApproved').textContent  = ffRequisitions.filter(r=>['Manager Approved','Admin Processing'].includes(r['Status'])).length;
+  document.getElementById('ffCardApproved').textContent  = ffRequisitions.filter(r=>['Manager Approved','Admin Processing','Admin Hold'].includes(r['Status'])).length;
   document.getElementById('ffCardCompleted').textContent = ffRequisitions.filter(r=>r['Status']==='Completed').length;
 
   var filtered = ffCurrentFilter==='All' ? ffRequisitions
-    : ffCurrentFilter==='Approved' ? ffRequisitions.filter(r=>['Manager Approved','Admin Processing'].includes(r['Status']))
+    : ffCurrentFilter==='Approved' ? ffRequisitions.filter(r=>['Manager Approved','Admin Processing','Admin Hold'].includes(r['Status']))
     : ffRequisitions.filter(r=>r['Status']===ffCurrentFilter);
 
   if(!ffRequisitions.length){
@@ -3189,6 +3192,7 @@ function statusBadgeClass(s){
   if(s==='Pending')          return 'rs-pending';
   if(s==='Manager Approved') return 'rs-approved';
   if(s==='Admin Processing') return 'rs-processing';
+  if(s==='Admin Hold')       return 'rs-hold';
   if(s==='Completed')        return 'rs-completed';
   if(s==='Rejected')         return 'rs-rejected';
   return 'rs-pending';
@@ -3231,10 +3235,10 @@ function buildCountdownHTML(r){
   var status = r['Status'] || '';
   if(status === 'Pending' || status === 'Rejected') return '';
 
-  // If admin has flagged an issue while this is still in Admin Processing,
-  // show that instead of the countdown — the clock is effectively on hold
-  // until the issue is resolved and the remark is cleared.
-  if(status === 'Admin Processing' && r['AdminOnHoldNote']){
+  // If admin has put this on hold (or, for older rows, flagged an issue
+  // while still in Admin Processing), show the reason instead of the
+  // countdown — the clock is effectively paused until resolved.
+  if(status === 'Admin Hold' || (status === 'Admin Processing' && r['AdminOnHoldNote'])){
     return '<div class="wd-countdown warn">' +
       '<div class="wd-icon">⏸️</div>' +
       '<div class="wd-info">' +
@@ -3310,7 +3314,10 @@ function buildTrackingHTML(r){
   ];
 
   var ORDER = ['Pending','Manager Approved','Admin Processing','Completed'];
-  var currentIdx = isRejected ? 0 : ORDER.indexOf(status);
+  // Admin Hold is a pause within the Processing step, not a separate step —
+  // treat it the same as Admin Processing for step position purposes.
+  var effectiveStatus = status === 'Admin Hold' ? 'Admin Processing' : status;
+  var currentIdx = isRejected ? 0 : ORDER.indexOf(effectiveStatus);
   if(currentIdx < 0) currentIdx = 0;
 
   // Progress bar width
@@ -3718,7 +3725,7 @@ function setAdmFilter(filter){
   admCurrentFilter = filter;
   var filterMap = {
     'All':'admFAll','Pending':'admFPending','Manager Approved':'admFApproved',
-    'Admin Processing':'admFProcessing','Completed':'admFCompleted','Rejected':'admFRejected'
+    'Admin Processing':'admFProcessing','Admin Hold':'admFHold','Completed':'admFCompleted','Rejected':'admFRejected'
   };
   Object.keys(filterMap).forEach(function(k){
     var el = document.getElementById(filterMap[k]);
@@ -3783,6 +3790,11 @@ function renderAdmTable(rows){
         '<button class="adm-action-btn adm-btn-complete" onclick="admUpdateStatusByIdx('+i+',1)">✓ Complete</button>' +
         '<button class="adm-action-btn" style="background:var(--amber-bg);color:#92400E;border:1.5px solid var(--amber-soft);" onclick="admEditRemarkModal('+i+')">📝'+(r['AdminOnHoldNote']?' Edit Remark':' Add Remark')+'</button>' +
         '</div>';
+    } else if(status === 'Admin Hold'){
+      action = '<div style="display:flex;flex-direction:column;gap:5px;min-width:90px;">' +
+        '<button class="adm-action-btn" style="background:var(--blue-bg);color:#1E40AF;border:1.5px solid var(--blue-soft);" onclick="admUpdateStatus('+i+',\'Admin Processing\')">▶ Resume Processing</button>' +
+        '<button class="adm-action-btn" style="background:var(--lav-bg);color:#5B21B6;border:1.5px solid var(--lav-soft);" onclick="admEditRemarkModal('+i+')">📝 Edit Remark</button>' +
+        '</div>';
     } else {
       action = '<span style="font-size:11px;color:var(--text3);">—</span>';
     }
@@ -3796,7 +3808,10 @@ function renderAdmTable(rows){
     var rowClass = '';
     var statusSub = '';
     var approvedDateStr = r['ManagerApprovedDate'] || r['LastUpdated'] || r['SubmissionDate'];
-    if(status === 'Admin Processing' && r['AdminOnHoldNote']){
+    if(status === 'Admin Hold'){
+      rowClass = ' adm-row-onhold';
+      statusSub = '<div style="font-size:9px;color:#5B21B6;font-weight:700;margin-top:2px;">⏸️ On Hold</div>';
+    } else if(status === 'Admin Processing' && r['AdminOnHoldNote']){
       rowClass = ' adm-row-onhold';
       statusSub = '<div style="font-size:9px;color:#92400E;font-weight:700;margin-top:2px;">⏸️ On Hold</div>';
     } else if(status === 'Admin Processing' && approvedDateStr){
@@ -3970,7 +3985,7 @@ function admEditRemarkModal(idx){
     '</div>' +
     '<label class="ff-remarks-label">Status</label>' +
     '<select class="ff" id="admRemarkStatusSelect" style="width:100%;margin-bottom:12px;padding:10px 12px;font-size:13px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--navy);font-family:\'Inter\',sans-serif;">' +
-    '<option value="Admin Processing">Keep in Admin Processing (on hold)</option>' +
+    '<option value="Admin Hold">Put On Hold (with remark)</option>' +
     '<option value="Completed">Mark as Completed</option>' +
     '<option value="Pending">Found an issue — send back to Pending</option>' +
     '</select>' +
@@ -4010,7 +4025,7 @@ async function admSubmitRemark(){
       });
     } else {
       selectedStatus = document.getElementById('admRemarkStatusSelect').value;
-      if(selectedStatus === 'Pending' || selectedStatus === 'Completed'){
+      if(selectedStatus === 'Pending' || selectedStatus === 'Completed' || selectedStatus === 'Admin Hold'){
         result = await authFetch(AUTH_URL, {
           action: 'updateRequisitionStatus',
           requisitionId: r['RequisitionId'],
@@ -4038,6 +4053,7 @@ async function admSubmitRemark(){
           if(mode === 'process') req['Status'] = 'Admin Processing';
           else if(selectedStatus === 'Pending'){ req['Status'] = 'Pending'; req['ManagerApprovedDate'] = ''; }
           else if(selectedStatus === 'Completed'){ req['Status'] = 'Completed'; }
+          else if(selectedStatus === 'Admin Hold'){ req['Status'] = 'Admin Hold'; }
         }
       });
       closeModal();
@@ -4045,6 +4061,7 @@ async function admSubmitRemark(){
       var toastMsg = mode==='process' ? 'Moved to Admin Processing.'
         : selectedStatus==='Pending' ? 'Sent back to Pending.'
         : selectedStatus==='Completed' ? 'Marked as Completed.'
+        : selectedStatus==='Admin Hold' ? 'Put on hold.'
         : 'On-hold note saved.';
       showFFToast(toastMsg);
     }
@@ -4073,7 +4090,7 @@ async function admUpdateStatus(idx, newStatus){
     });
     if(result.error){
       alert('Error: '+result.error);
-      btn.disabled=false; btn.textContent=newStatus==='Admin Processing'?'Process':'Complete';
+      btn.disabled=false; btn.textContent=newStatus==='Admin Processing'?'▶ Resume Processing':'Complete';
     } else {
       // Update local data
       admAllRequisitions.forEach(function(req){
