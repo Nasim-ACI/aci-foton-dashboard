@@ -774,9 +774,9 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
 
       <!-- Monthly requisition approval stats -->
       <div class="pf-card">
-        <div class="pf-card-title">📈 Requisition Approval Stats</div>
-        <div class="pf-card-sub">Manager-approved & completed counts per month, with average processing time</div>
-        <div id="approvalStatsBody" style="max-height:190px;overflow-y:auto;">
+        <div class="pf-card-title">📈 Requisition Workflow Stats</div>
+        <div class="pf-card-sub">Full pipeline breakdown per month — submitted → approved → processing → sent</div>
+        <div id="approvalStatsBody" style="max-height:280px;overflow-y:auto;">
           <div style="font-size:11px;color:var(--text3);">Loading...</div>
         </div>
       </div>
@@ -935,9 +935,9 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       </div>
 
       <div class="pf-card">
-        <div class="pf-card-title">📈 Requisition Approval Stats</div>
-        <div class="pf-card-sub">Manager-approved & completed counts per month, with average processing time</div>
-        <div id="hqApprovalStatsBody" style="max-height:250px;overflow-y:auto;">
+        <div class="pf-card-title">📈 Requisition Workflow Stats</div>
+        <div class="pf-card-sub">Full pipeline breakdown per month — submitted → approved → processing → sent</div>
+        <div id="hqApprovalStatsBody" style="max-height:340px;overflow-y:auto;">
           <div style="font-size:11px;color:var(--text3);">Loading...</div>
         </div>
       </div>
@@ -1472,31 +1472,43 @@ async function loadHQPanel(){
 }
 
 function buildApprovalStatsCard(requisitions){
-  // Group by month: how many were manager-approved that month, how many
-  // were completed that month, and the average working days from approval
-  // to completion (only counted once a requisition is actually Completed).
+  // Grouped by SUBMISSION month — "of everything submitted this month,
+  // where does it currently stand?" This gives HQ/Admin the full picture
+  // (approved, processing, on hold, sent, rejected) instead of only
+  // approved+completed counts, which looked thin next to submission volume.
   var monthly = {};
   function bucket(k){
-    if(!monthly[k]) monthly[k] = {approved:0, completed:0, totalDays:0, withDates:0};
+    if(!monthly[k]) monthly[k] = {
+      total:0, managerApproved:0, adminProcessing:0, adminHold:0,
+      sent:0, rejected:0, totalDays:0, withDates:0
+    };
     return monthly[k];
   }
 
   requisitions.forEach(function(r){
-    var apprStr = r['ManagerApprovedDate'];
-    if(apprStr){
-      var ad = new Date(apprStr);
-      if(!isNaN(ad.getTime())){
-        bucket(MONTHS[ad.getMonth()]+' '+String(ad.getFullYear()).slice(2)).approved++;
-      }
+    var subStr = r['SubmissionDate'];
+    if(!subStr) return;
+    var sd = new Date(subStr);
+    if(isNaN(sd.getTime())) return;
+    var b = bucket(MONTHS[sd.getMonth()]+' '+String(sd.getFullYear()).slice(2));
+    b.total++;
+    var status = r['Status'];
+    if(status === 'Manager Approved') b.managerApproved++;
+    else if(status === 'Admin Hold') b.adminHold++;
+    else if(status === 'Admin Processing'){
+      if(r['AdminOnHoldNote']) b.adminHold++; // legacy hold, flagged by note only
+      else b.adminProcessing++;
     }
-    if(r['Status'] === 'Completed' && apprStr && r['LastUpdated']){
-      var ad2 = new Date(apprStr);
-      var cd2 = new Date(r['LastUpdated']);
-      if(!isNaN(ad2.getTime()) && !isNaN(cd2.getTime())){
-        var b = bucket(MONTHS[cd2.getMonth()]+' '+String(cd2.getFullYear()).slice(2));
-        b.completed++;
-        b.totalDays += countWorkingDays(ad2, cd2);
-        b.withDates++;
+    else if(status === 'Rejected') b.rejected++;
+    else if(status === 'Completed'){
+      b.sent++;
+      var apprStr = r['ManagerApprovedDate'];
+      if(apprStr && r['LastUpdated']){
+        var ad2 = new Date(apprStr), cd2 = new Date(r['LastUpdated']);
+        if(!isNaN(ad2.getTime()) && !isNaN(cd2.getTime())){
+          b.totalDays += countWorkingDays(ad2, cd2);
+          b.withDates++;
+        }
       }
     }
   });
@@ -1505,20 +1517,31 @@ function buildApprovalStatsCard(requisitions){
     var pa=a[0].split(' '), pb=b[0].split(' ');
     var ya=parseInt(pa[1]), yb=parseInt(pb[1]), ma=MONTHS.indexOf(pa[0]), mb=MONTHS.indexOf(pb[0]);
     return ya!==yb ? ya-yb : ma-mb;
-  }).slice(-8);
+  }).slice(-6);
 
-  if(!entries.length) return '<div style="font-size:11px;color:var(--text3);">No manager-approved requisitions yet.</div>';
+  if(!entries.length) return '<div style="font-size:11px;color:var(--text3);">No requisition data yet.</div>';
+
+  function chip(bg,fg,val,label){
+    return '<span style="background:'+bg+';color:'+fg+';font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;">'+val+' '+label+'</span>';
+  }
 
   return entries.map(function(e){
     var m = e[0], v = e[1];
     var avg = v.withDates ? Math.round(v.totalDays / v.withDates) : null;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bg);">' +
-      '<div style="font-size:12px;font-weight:800;color:var(--navy);min-width:56px;">'+m+'</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;">' +
-      '<span style="background:var(--blue-bg);color:#1E40AF;font-weight:700;padding:3px 9px;border-radius:99px;">'+v.approved+' approved</span>' +
-      '<span style="background:var(--mint-bg);color:#065F46;font-weight:700;padding:3px 9px;border-radius:99px;">'+v.completed+' completed</span>' +
-      (avg!==null ? '<span style="background:var(--amber-bg);color:#92400E;font-weight:700;padding:3px 9px;border-radius:99px;">'+avg+' day'+(avg===1?'':'s')+' avg</span>' : '') +
-      '</div></div>';
+    return '<div style="border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:9px;background:var(--white);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+        '<div style="font-size:13px;font-weight:800;color:var(--navy);">'+m+'</div>' +
+        '<div style="font-size:11px;color:var(--text3);"><span style="font-size:16px;font-weight:800;color:var(--navy);">'+v.total+'</span> submitted</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10px;">' +
+        chip('var(--blue-bg)','#1E40AF',v.managerApproved,'approved') +
+        chip('var(--blue-bg)','var(--blue)',v.adminProcessing,'processing') +
+        chip('var(--lav-bg)','#5B21B6',v.adminHold,'on hold') +
+        chip('var(--mint-bg)','#065F46',v.sent,'sent') +
+        chip('var(--red-bg)','var(--red)',v.rejected,'rejected') +
+        (avg!==null ? chip('var(--amber-bg)','#92400E',avg,'day'+(avg===1?'':'s')+' avg') : '') +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -3745,8 +3768,15 @@ function filterAdmRequisitions(){
       var d = r['SubmissionDate'] ? new Date(r['SubmissionDate']) : null;
       if(!d || d.getMonth() !== parseInt(month)) return false;
     }
-    // Status filter
-    if(admCurrentFilter !== 'All' && r['Status'] !== admCurrentFilter) return false;
+    // Status filter — "Admin Hold" also catches legacy rows that were put
+    // on hold the old way (still literally "Admin Processing", flagged only
+    // by a note), so nothing from before this feature existed goes missing.
+    if(admCurrentFilter === 'Admin Hold'){
+      var isLegacyHold = r['Status'] === 'Admin Processing' && r['AdminOnHoldNote'];
+      if(r['Status'] !== 'Admin Hold' && !isLegacyHold) return false;
+    } else if(admCurrentFilter !== 'All' && r['Status'] !== admCurrentFilter){
+      return false;
+    }
     // Search filter
     if(search){
       var hay = [r['RequisitionId'],r['VehicleCode'],r['OfficerName'],r['Territory'],r['StaffId']].join(' ').toLowerCase();
