@@ -774,8 +774,8 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
 
       <!-- Monthly requisition approval stats -->
       <div class="pf-card">
-        <div class="pf-card-title">📈 Requisition Workflow Stats</div>
-        <div class="pf-card-sub">Full pipeline breakdown per month — submitted → approved → processing → sent</div>
+        <div class="pf-card-title">📈 Requisition Approval Stats</div>
+        <div class="pf-card-sub">Per-month breakdown — tap any figure to see the underlying records</div>
         <div id="approvalStatsBody" style="max-height:280px;overflow-y:auto;">
           <div style="font-size:11px;color:var(--text3);">Loading...</div>
         </div>
@@ -935,8 +935,8 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
       </div>
 
       <div class="pf-card">
-        <div class="pf-card-title">📈 Requisition Workflow Stats</div>
-        <div class="pf-card-sub">Full pipeline breakdown per month — submitted → approved → processing → sent</div>
+        <div class="pf-card-title">📈 Requisition Approval Stats</div>
+        <div class="pf-card-sub">Per-month breakdown — tap any figure to see the underlying records</div>
         <div id="hqApprovalStatsBody" style="max-height:340px;overflow-y:auto;">
           <div style="font-size:11px;color:var(--text3);">Loading...</div>
         </div>
@@ -1472,15 +1472,22 @@ async function loadHQPanel(){
 }
 
 function buildApprovalStatsCard(requisitions){
-  // Grouped by SUBMISSION month — "of everything submitted this month,
-  // where does it currently stand?" This gives HQ/Admin the full picture
-  // (approved, processing, on hold, sent, rejected) instead of only
-  // approved+completed counts, which looked thin next to submission volume.
+  // Grouped by SUBMISSION month. "Approved" = cumulative — anything that has
+  // EVER passed manager approval (regardless of where it sits now), shown
+  // against total submitted.
+  //
+  // "On-time %" covers every item NOT on hold and NOT rejected — including
+  // ones still sitting in Processing right now. A code stuck past the
+  // 20-working-day deadline counts as late even if it was never sent, since
+  // that's exactly the case that matters (can't just hide behind "not sent
+  // yet"). Only Completed items get judged by their actual send date; open
+  // items are judged against today.
+  var today = new Date();
   var monthly = {};
+  window._statsDrill = window._statsDrill || {};
   function bucket(k){
     if(!monthly[k]) monthly[k] = {
-      total:0, managerApproved:0, adminProcessing:0, adminHold:0,
-      sent:0, rejected:0, totalDays:0, withDates:0
+      total:0, approved:[], processing:[], hold:[], sent:[], rejected:[], ontimeEval:[]
     };
     return monthly[k];
   }
@@ -1490,24 +1497,41 @@ function buildApprovalStatsCard(requisitions){
     if(!subStr) return;
     var sd = new Date(subStr);
     if(isNaN(sd.getTime())) return;
-    var b = bucket(MONTHS[sd.getMonth()]+' '+String(sd.getFullYear()).slice(2));
+    var key = MONTHS[sd.getMonth()]+' '+String(sd.getFullYear()).slice(2);
+    var b = bucket(key);
     b.total++;
     var status = r['Status'];
-    if(status === 'Manager Approved') b.managerApproved++;
-    else if(status === 'Admin Hold') b.adminHold++;
-    else if(status === 'Admin Processing'){
-      if(r['AdminOnHoldNote']) b.adminHold++; // legacy hold, flagged by note only
-      else b.adminProcessing++;
-    }
-    else if(status === 'Rejected') b.rejected++;
+    var everApproved = ['Manager Approved','Admin Processing','Admin Hold','Completed'].indexOf(status) !== -1;
+    if(everApproved) b.approved.push(r);
+
+    var isLegacyHold = status === 'Admin Processing' && r['AdminOnHoldNote'];
+    if(status === 'Admin Hold' || isLegacyHold) b.hold.push(r);
+    else if(status === 'Admin Processing') b.processing.push(r);
+    else if(status === 'Rejected') b.rejected.push(r);
     else if(status === 'Completed'){
-      b.sent++;
       var apprStr = r['ManagerApprovedDate'];
+      var onTime = null;
       if(apprStr && r['LastUpdated']){
-        var ad2 = new Date(apprStr), cd2 = new Date(r['LastUpdated']);
-        if(!isNaN(ad2.getTime()) && !isNaN(cd2.getTime())){
-          b.totalDays += countWorkingDays(ad2, cd2);
-          b.withDates++;
+        var ad = new Date(apprStr), cd = new Date(r['LastUpdated']);
+        if(!isNaN(ad.getTime()) && !isNaN(cd.getTime())){
+          onTime = countWorkingDays(ad, cd) <= TOTAL_WD;
+        }
+      }
+      r._onTime = onTime;
+      b.sent.push(r);
+    }
+
+    // On-time evaluation pool: everything except Hold and Rejected.
+    if(status !== 'Rejected' && !(status === 'Admin Hold' || isLegacyHold)){
+      var apprStr2 = r['ManagerApprovedDate'];
+      if(apprStr2){
+        var ad2 = new Date(apprStr2);
+        if(!isNaN(ad2.getTime())){
+          var endDate = status === 'Completed' ? new Date(r['LastUpdated']) : today;
+          if(!isNaN(endDate.getTime())){
+            r._ontimeEval = countWorkingDays(ad2, endDate) <= TOTAL_WD;
+            b.ontimeEval.push(r);
+          }
         }
       }
     }
@@ -1521,29 +1545,121 @@ function buildApprovalStatsCard(requisitions){
 
   if(!entries.length) return '<div style="font-size:11px;color:var(--text3);">No requisition data yet.</div>';
 
-  function chip(bg,fg,val,label){
-    return '<span style="background:'+bg+';color:'+fg+';font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;">'+val+' '+label+'</span>';
+  function chip(bg,fg,label,monthKey,cat){
+    return '<span onclick="showStatsDrill(\''+monthKey+'\',\''+cat+'\')" style="cursor:pointer;background:'+bg+';color:'+fg+';font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;">'+label+'</span>';
   }
 
   return entries.map(function(e){
     var m = e[0], v = e[1];
-    var avg = v.withDates ? Math.round(v.totalDays / v.withDates) : null;
+    window._statsDrill[m] = v;
+    var approvedPct = v.total ? Math.round(v.approved.length / v.total * 100) : 0;
+    var onTimeCount = v.ontimeEval.filter(function(r){return r._ontimeEval===true;}).length;
+    var onTimePct = v.ontimeEval.length ? Math.round(onTimeCount / v.ontimeEval.length * 100) : null;
     return '<div style="border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:9px;background:var(--white);">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
         '<div style="font-size:13px;font-weight:800;color:var(--navy);">'+m+'</div>' +
         '<div style="font-size:11px;color:var(--text3);"><span style="font-size:16px;font-weight:800;color:var(--navy);">'+v.total+'</span> submitted</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10px;">' +
-        chip('var(--blue-bg)','#1E40AF',v.managerApproved,'approved') +
-        chip('var(--blue-bg)','var(--blue)',v.adminProcessing,'processing') +
-        chip('var(--lav-bg)','#5B21B6',v.adminHold,'on hold') +
-        chip('var(--mint-bg)','#065F46',v.sent,'sent') +
-        chip('var(--red-bg)','var(--red)',v.rejected,'rejected') +
-        (avg!==null ? chip('var(--amber-bg)','#92400E',avg,'day'+(avg===1?'':'s')+' avg') : '') +
+        chip('var(--blue-bg)','#1E40AF',v.approved.length+'/'+v.total+' approved ('+approvedPct+'%)',m,'approved') +
+        chip('var(--blue-bg)','var(--blue)',v.processing.length+' processing',m,'processing') +
+        chip('var(--lav-bg)','#5B21B6',v.hold.length+' on hold',m,'hold') +
+        chip('var(--mint-bg)','#065F46',v.sent.length+' sent',m,'sent') +
+        chip('var(--red-bg)','var(--red)',v.rejected.length+' rejected',m,'rejected') +
+        (onTimePct!==null ? chip('var(--amber-bg)','#92400E',onTimePct+'% on-time',m,'ontimeEval') : '') +
       '</div>' +
     '</div>';
   }).join('');
 }
+
+// ── DRILL-DOWN — click any stat chip to see the actual rows behind it ────────
+function showStatsDrill(monthKey, cat){
+  var data = (window._statsDrill && window._statsDrill[monthKey]) || null;
+  var rows = data ? (data[cat] || []) : [];
+  var labels = {approved:'Approved', processing:'Processing', hold:'On Hold', sent:'Sent', rejected:'Rejected', ontimeEval:'On-Time Performance'};
+  var showDelivered = cat === 'sent' || cat === 'ontimeEval';
+  var showReason = cat === 'hold' || cat === 'rejected';
+  var deliveredHeader = cat === 'ontimeEval' ? 'On Track' : 'Delivered';
+
+  var body = rows.length ? rows.map(function(r){
+    var flag = cat === 'ontimeEval' ? r._ontimeEval : r._onTime;
+    var deliveredCell = '';
+    if(showDelivered){
+      deliveredCell = flag===true
+        ? '<span style="color:#065F46;font-weight:700;">On Time</span>'
+        : flag===false
+          ? '<span style="color:var(--red);font-weight:700;">Late</span>'
+          : '<span style="color:var(--text3);">—</span>';
+    }
+    var reqIdSafe = String(r['RequisitionId']||'').replace(/'/g,"\\'");
+    var codeCell = showReason
+      ? '<span onclick="showReasonDetail(\''+monthKey+'\',\''+cat+'\',\''+reqIdSafe+'\')" style="cursor:pointer;color:var(--blue);text-decoration:underline;font-weight:700;">'+(r['VehicleCode']||'')+' 🔍</span>'
+      : '<span style="font-weight:700;">'+(r['VehicleCode']||'')+'</span>';
+    return '<tr>' +
+      '<td style="padding:8px 10px;font-size:11px;">'+(r['RequisitionId']||'')+'</td>' +
+      '<td style="padding:8px 10px;font-size:11px;">'+codeCell+'</td>' +
+      '<td style="padding:8px 10px;font-size:11px;">'+(r['OfficerName']||'')+'</td>' +
+      '<td style="padding:8px 10px;font-size:11px;">'+(r['Territory']||'')+'</td>' +
+      '<td style="padding:8px 10px;font-size:11px;">'+(r['Status']||'')+'</td>' +
+      (showDelivered ? '<td style="padding:8px 10px;font-size:11px;">'+deliveredCell+'</td>' : '') +
+    '</tr>';
+  }).join('') : '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No records in this category.</td></tr>';
+
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
+    '<div class="rec-box" style="max-width:800px;width:96vw;">' +
+    '<div class="rec-head">' +
+    '<div class="rec-head-title">'+monthKey+' — '+(labels[cat]||cat)+' ('+rows.length+')</div>' +
+    '<button class="rec-close" onclick="closeModal()">X</button>' +
+    '</div>' +
+    '<div class="rec-body" style="padding:0;max-height:65vh;overflow-y:auto;">' +
+    (showReason ? '<div style="padding:8px 13px;font-size:10px;color:var(--text3);background:var(--bg);">🔍 Tap a vehicle code to see the reason</div>' : '') +
+    '<table style="width:100%;border-collapse:collapse;">' +
+    '<thead><tr>' +
+    '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">Req ID</th>' +
+    '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">Vehicle</th>' +
+    '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">Officer</th>' +
+    '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">Territory</th>' +
+    '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">Status</th>' +
+    (showDelivered ? '<th style="padding:9px 10px;background:var(--navy);color:#fff;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;">'+deliveredHeader+'</th>' : '') +
+    '</tr></thead>' +
+    '<tbody>'+body+'</tbody>' +
+    '</table>' +
+    '</div>' +
+    '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
+    '</div></div>';
+}
+
+// ── REASON DETAIL — second-level popup for a Hold/Rejected code, same info
+// an Admin panel view would show, so HQ can see WHY without needing admin access.
+function showReasonDetail(monthKey, cat, reqId){
+  var data = (window._statsDrill && window._statsDrill[monthKey]) || null;
+  var rows = data ? (data[cat] || []) : [];
+  var r = rows.find(function(x){ return String(x['RequisitionId']) === String(reqId); });
+  if(!r) return;
+
+  var reasonLabel = cat === 'hold' ? 'On-Hold Reason (Admin)' : 'Rejection Reason (Manager)';
+  var reasonText = cat === 'hold'
+    ? (r['AdminOnHoldNote'] || 'No remark recorded.')
+    : (r['ManagerRemark'] || 'No remark recorded.');
+
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target===this)closeModal()">' +
+    '<div class="rec-box" style="max-width:480px;width:92vw;">' +
+    '<div class="rec-head">' +
+    '<div class="rec-head-title">'+(r['VehicleCode']||'')+' — '+(r['RequisitionId']||'')+'</div>' +
+    '<button class="rec-close" onclick="closeModal()">X</button>' +
+    '</div>' +
+    '<div class="rec-body">' +
+    '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px;">Officer</div>' +
+    '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px;">'+(r['OfficerName']||'—')+' · '+(r['Territory']||'')+'</div>' +
+    '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px;">'+reasonLabel+'</div>' +
+    '<div style="font-size:13px;color:var(--navy);background:var(--bg);border-radius:8px;padding:11px;line-height:1.5;">'+reasonText+'</div>' +
+    '</div>' +
+    '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
+    '</div></div>';
+}
+
 
 
 // ── PIE CHART — Real data, clickable slices ───────────────────────────────────
