@@ -897,7 +897,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     </div>
     <div class="ff-user-info">
       <div class="ff-avatar" style="background:#7C3AED;">H</div>
-      <div><div class="ff-uname" id="hqUserName">DGM</div><div class="ff-urole">DGM Panel — Statistics Overview</div></div>
+      <div><div class="ff-uname" id="hqUserName">HQ</div><div class="ff-urole" id="hqUserRole">HQ Panel — Statistics Overview</div></div>
       <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
       <button class="tbtn" onclick="logout()">🔒 Logout</button>
     </div>
@@ -905,7 +905,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
   <div class="pf-body" style="padding:16px;">
     <div class="ff-welcome" style="background:linear-gradient(135deg,#4C1D95,#7C3AED);margin-bottom:16px;">
       <div class="ff-welcome-name" id="hqWelcomeName">Welcome</div>
-      <div class="ff-welcome-meta"><span>DGM Panel — Read-only overview — Total &amp; monthly statistics</span></div>
+      <div class="ff-welcome-meta"><span id="hqWelcomeMeta">HQ Panel — Read-only overview — Total &amp; monthly statistics</span></div>
       <div style="margin-top:6px;position:relative;">
         <input id="hqSearchInput" inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" placeholder="🔍 Search code, name, registration, engine..." oninput="hqDoSearch()" onkeydown="if(event.key==='Escape'){this.value='';hqDoSearch();}" style="width:100%;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);border-radius:11px;padding:12px 16px;font-size:14px;color:#fff;font-family:'Inter',sans-serif;outline:none;box-sizing:border-box;"/>
         <div id="hqSearchResults" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:2px solid var(--border);border-radius:11px;box-shadow:var(--shadow2);z-index:100;max-height:280px;overflow-y:auto;"></div>
@@ -2119,16 +2119,20 @@ function _pfRenderItems(matches,source){
     const ai=isS2?-1:all.indexOf(r);
     const onclick=isS2?`pfClickS2Result(${JSON.stringify(r).replace(/'/g,"&#39;")})`:`pfClickResult(${ai})`;
     const reqBadge = buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']);
+    // "Not yet processed" should only appear when there's truly no activity
+    // yet — if a requisition already exists (reqBadge is non-empty), showing
+    // both was contradictory (e.g. "Not yet processed" next to "Admin
+    // Processing — 9 days elapsed").
     return`<div class="pf-srch-item" onclick="${onclick}">
       <div class="pf-srch-name">${r['Customer Name']||'—'}<span class="pf-srch-badge" style="${bc};font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;">${badge}</span></div>
-      <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span>${isS2?'<span style="color:var(--blue);font-weight:700;">Not yet processed</span>':''}</div>
+      <div class="pf-srch-meta"><span>📋 ${r['Code']||'—'}</span><span>🔑 ${r['Registration No']||'—'}</span>${(isS2&&!reqBadge)?'<span style="color:var(--blue);font-weight:700;">Not yet processed</span>':''}</div>
       ${reqBadge}
     </div>`;
   }).join('');
 }
 
-// ── DGM/HQ SEARCH — read-only: opens the vehicle detail popup directly,
-// never navigates to the editable Dashboard (DGM has no edit access).
+// ── HQ SEARCH — read-only: opens the vehicle detail popup directly,
+// never navigates to the editable Dashboard (HQ has no edit access).
 let _hqTimer=null;
 function hqDoSearch(){
   clearTimeout(_hqTimer);
@@ -2275,9 +2279,11 @@ async function _dbSearchNow(){
       return;
     }
     dd.innerHTML=s2.map(r=>{
+      const reqBadge = buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']);
       return`<div class="db-dd-item" onclick="dbDropClickS2(${JSON.stringify(r).replace(/"/g,'&quot;')})">
         <div class="db-dd-name" style="color:var(--blue);">${r['Customer Name']||'—'}<span style="background:var(--blue-bg);color:#1E40AF;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700;margin-left:6px;">Master List</span></div>
-        <div class="db-dd-meta"><span>Code: <b>${r['Code']||'—'}</b></span><span>Reg: <b>${r['Registration No']||'—'}</b></span><span style="color:var(--blue);">Not yet processed</span></div>
+        <div class="db-dd-meta"><span>Code: <b>${r['Code']||'—'}</b></span><span>Reg: <b>${r['Registration No']||'—'}</b></span>${reqBadge?'':'<span style="color:var(--blue);">Not yet processed</span>'}</div>
+        ${reqBadge}
       </div>`;
     }).join('');
   }catch(err){
@@ -2485,6 +2491,8 @@ function closeModal(){document.getElementById('modalArea').innerHTML='';}
 // ── SHEET 2 RECORD POPUP ──────────────────────────────────────────────────────
 // Shown when a vehicle is found in Sheet2 (master list) but NOT in Sheet1
 function showS2Popup(r){
+  var reqBadge = buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']);
+  var hasReq = !!reqBadge;
   document.getElementById('modalArea').innerHTML=`
   <div class="ov" onclick="if(event.target.classList.contains('ov'))closeModal()">
     <div class="rec-box">
@@ -2494,17 +2502,17 @@ function showS2Popup(r){
       </div>
       <div class="rec-body">
         <div style="background:var(--blue-bg);border:1.5px solid var(--blue-soft);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1E40AF;font-weight:600;">
-          ℹ️ This vehicle is in the <b>Master List (Sheet 2)</b> but has not been processed yet. It does not appear in Sent Status records.
+          ℹ️ This vehicle is in the <b>Master List (Sheet 2)</b>${hasReq ? ' and has an active requisition — see below.' : '. No courier record or requisition exists for it yet.'}
         </div>
         <div class="rec-grid">
           <div class="rec-field"><div class="rec-label">SL</div><div class="rec-value">${r['SL']||'—'}</div></div>
           <div class="rec-field"><div class="rec-label">Code</div><div class="rec-value">${r['Code']||'—'}</div></div>
           <div class="rec-field full"><div class="rec-label">Customer Name</div><div class="rec-value">${r['Customer Name']||'—'}</div></div>
           <div class="rec-field full"><div class="rec-label">Registration No</div><div class="rec-value">${r['Registration No']||'—'}</div></div>
-          <div class="rec-field full"><div class="rec-label">Status</div>
-            <div class="rec-value"><span style="background:var(--blue-bg);color:#1E40AF;border:2px solid var(--blue-soft);display:inline-block;padding:5px 14px;border-radius:99px;font-weight:800;font-size:12px;">Not Processed</span></div>
-          </div>
-          <div class="rec-field full">${buildReqStatusBadgeHTML(r['Code']||r['CustomerCode']) || '<div style="font-size:11px;color:var(--text3);">No requisition has been submitted for this vehicle yet.</div>'}</div>
+          ${hasReq ? '' : `<div class="rec-field full"><div class="rec-label">Status</div>
+            <div class="rec-value"><span style="background:var(--blue-bg);color:#1E40AF;border:2px solid var(--blue-soft);display:inline-block;padding:5px 14px;border-radius:99px;font-weight:800;font-size:12px;">No Courier Record Yet</span></div>
+          </div>`}
+          <div class="rec-field full">${reqBadge || '<div style="font-size:11px;color:var(--text3);">No requisition has been submitted for this vehicle yet.</div>'}</div>
         </div>
       </div>
       <div class="rec-foot">
@@ -2518,7 +2526,9 @@ function showS2Popup(r){
 function copyS2Rec(rStr){
   let r=rStr;
   if(typeof r==='string'){try{r=JSON.parse(r);}catch(e){return;}}
-  const txt=`Customer Name : ${r['Customer Name']||'—'}\nCode          : ${r['Code']||'—'}\nRegistration  : ${r['Registration No']||'—'}\nStatus        : Not Processed (Sheet 2 – Master List)`;
+  const reqStatus = getReqStatusText_(r['Code']||r['CustomerCode']);
+  const statusLine = reqStatus ? reqStatus : 'No Courier Record Yet (Sheet 2 – Master List)';
+  const txt=`Customer Name : ${r['Customer Name']||'—'}\nCode          : ${r['Code']||'—'}\nRegistration  : ${r['Registration No']||'—'}\nStatus        : ${statusLine}`;
   navigator.clipboard.writeText(txt).then(()=>alert('✅ Copied!')).catch(()=>{
     const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);alert('✅ Copied!');
   });
@@ -2609,6 +2619,21 @@ let allReqCache = [];
 // small HTML badge (or '' if no requisition exists for that code at all).
 // Shows elapsed working days for anything still in Admin Processing, matching
 // the same day-tracking already used elsewhere in the app.
+// Plain-text version of the same lookup buildReqStatusBadgeHTML uses —
+// returns the actual Status string (e.g. "Admin Processing") if a
+// requisition exists for this code, or null if none does. Used anywhere
+// that needs to know WHETHER something is "not processed yet" without
+// rendering HTML (e.g. deciding what label/text to show).
+function getReqStatusText_(code){
+  if(!code || !allReqCache.length) return null;
+  var codeUp = String(code).toUpperCase();
+  var match = null;
+  for(var i=0; i<allReqCache.length; i++){
+    if(String(allReqCache[i]['VehicleCode']||'').toUpperCase() === codeUp) match = allReqCache[i];
+  }
+  return match ? (match['Status'] || 'Pending') : null;
+}
+
 function buildReqStatusBadgeHTML(code){
   if(!code || !allReqCache.length) return '';
   var codeUp = String(code).toUpperCase();
@@ -2876,8 +2901,11 @@ function onLoginSuccess(session){
   } else if(session.role === 'hq'){
     // HQ goes to a dedicated read-only statistics screen
     document.getElementById('hqHome').classList.add('active');
+    var hqTitle = session.designation || 'HQ';
     document.getElementById('hqUserName').textContent = session.name || 'HQ';
-    document.getElementById('hqWelcomeName').textContent = 'Welcome DGM ' + (session.name||'HQ');
+    document.getElementById('hqUserRole').textContent = hqTitle + ' Panel — Statistics Overview';
+    document.getElementById('hqWelcomeName').textContent = 'Welcome ' + hqTitle + ' ' + (session.name||'HQ');
+    document.getElementById('hqWelcomeMeta').textContent = hqTitle + ' Panel — Read-only overview — Total & monthly statistics';
     loadHQPanel();
   } else if(session.role === 'manager'){
     // Manager goes to approval panel
