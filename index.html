@@ -1487,7 +1487,7 @@ function buildApprovalStatsCard(requisitions){
   window._statsDrill = window._statsDrill || {};
   function bucket(k){
     if(!monthly[k]) monthly[k] = {
-      total:0, approved:[], processing:[], hold:[], sent:[], rejected:[], ontimeEval:[]
+      total:0, approved:[], awaiting:[], processing:[], hold:[], sent:[], rejected:[], ontimeEval:[]
     };
     return monthly[k];
   }
@@ -1505,7 +1505,8 @@ function buildApprovalStatsCard(requisitions){
     if(everApproved) b.approved.push(r);
 
     var isLegacyHold = status === 'Admin Processing' && r['AdminOnHoldNote'];
-    if(status === 'Admin Hold' || isLegacyHold) b.hold.push(r);
+    if(status === 'Manager Approved') b.awaiting.push(r); // approved, admin hasn't picked it up yet
+    else if(status === 'Admin Hold' || isLegacyHold) b.hold.push(r);
     else if(status === 'Admin Processing') b.processing.push(r);
     else if(status === 'Rejected') b.rejected.push(r);
     else if(status === 'Completed'){
@@ -1562,6 +1563,7 @@ function buildApprovalStatsCard(requisitions){
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:10px;">' +
         chip('var(--blue-bg)','#1E40AF',v.approved.length+'/'+v.total+' approved ('+approvedPct+'%)',m,'approved') +
+        chip('#E0E7FF','#3730A3',v.awaiting.length+' awaiting pickup',m,'awaiting') +
         chip('var(--blue-bg)','var(--blue)',v.processing.length+' processing',m,'processing') +
         chip('var(--lav-bg)','#5B21B6',v.hold.length+' on hold',m,'hold') +
         chip('var(--mint-bg)','#065F46',v.sent.length+' sent',m,'sent') +
@@ -1576,7 +1578,7 @@ function buildApprovalStatsCard(requisitions){
 function showStatsDrill(monthKey, cat){
   var data = (window._statsDrill && window._statsDrill[monthKey]) || null;
   var rows = data ? (data[cat] || []) : [];
-  var labels = {approved:'Approved', processing:'Processing', hold:'On Hold', sent:'Sent', rejected:'Rejected', ontimeEval:'On-Time Performance'};
+  var labels = {approved:'Approved', awaiting:'Awaiting Admin Pickup', processing:'Processing', hold:'On Hold', sent:'Sent', rejected:'Rejected', ontimeEval:'On-Time Performance'};
   var showDelivered = cat === 'sent' || cat === 'ontimeEval';
   var showReason = cat === 'hold' || cat === 'rejected';
   var deliveredHeader = cat === 'ontimeEval' ? 'On Track' : 'Delivered';
