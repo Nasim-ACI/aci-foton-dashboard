@@ -3521,6 +3521,74 @@ function buildTrackingHTML(r){
     '</div>';
 }
 
+// ── ACTIVITY HISTORY — shared across all 4 roles' requisition detail views ───
+// Fetches the full audit trail for one requisition and renders it as a
+// timeline. Server-side already scopes what each role is allowed to see
+// (Field only their own, Manager only their jurisdiction) — this just
+// displays whatever comes back.
+async function loadReqHistory(reqId, containerId){
+  var box = document.getElementById(containerId);
+  if(!box) return;
+  try{
+    var result = await authFetch(AUTH_URL, {token:SESSION.sessionToken, action:'getActivityLog', requisitionId:reqId});
+    var rows = (result && result.rows) || [];
+    if(!rows.length){
+      box.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 0;">No history recorded yet.</div>';
+      return;
+    }
+
+    // Work out every hold period from the log: each "Admin Hold" entry opens
+    // a period, the next entry after it (resumed, completed, whatever)
+    // closes it — so we can show WHY it was held and HOW LONG, even long
+    // after it's been resumed or completed, not just while actively on hold.
+    var holdPeriods = [];
+    var openHold = null;
+    rows.forEach(function(row){
+      if(row['Action'] === 'Admin Hold'){
+        openHold = {start: row['Timestamp'], remark: row['Remark'] || ''};
+      } else if(openHold){
+        holdPeriods.push({start: openHold.start, end: row['Timestamp'], remark: openHold.remark, ongoing:false});
+        openHold = null;
+      }
+    });
+    if(openHold) holdPeriods.push({start: openHold.start, end: null, remark: openHold.remark, ongoing:true});
+
+    var holdHTML = '';
+    if(holdPeriods.length){
+      holdHTML = '<div style="margin-bottom:12px;">' + holdPeriods.map(function(p){
+        var startD = new Date(p.start);
+        var endD = p.ongoing ? new Date() : new Date(p.end);
+        var days = countWorkingDays(startD, endD);
+        var rangeText = p.ongoing
+          ? startD.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' — still on hold'
+          : startD.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' to ' + endD.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+        return '<div style="background:var(--lav-bg);border:1px solid var(--lav-soft);border-radius:10px;padding:9px 12px;margin-bottom:6px;">' +
+          '<div style="font-size:11px;font-weight:800;color:#5B21B6;">⏸️ On hold for ' + days + ' working day' + (days===1?'':'s') + ' (' + rangeText + ')</div>' +
+          (p.remark ? '<div style="font-size:11px;color:#5B21B6;margin-top:3px;">Reason: "' + p.remark + '"</div>' : '<div style="font-size:11px;color:#5B21B6;margin-top:3px;">No reason recorded.</div>') +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    var timelineHTML = rows.map(function(row){
+      var when = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+      var actionLabel = row['Action'] || '';
+      var actor = MGR_DISPLAY_NAMES[row['ActorUsername']] || row['ActorUsername'] || 'Unknown';
+      var roleTag = row['ActorRole'] ? ' (' + row['ActorRole'] + ')' : '';
+      return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg);">' +
+        '<div style="font-size:10px;color:var(--text3);white-space:nowrap;min-width:110px;">' + when + '</div>' +
+        '<div style="font-size:12px;color:var(--navy);flex:1;">' +
+          '<b>' + actionLabel + '</b> by <b>' + actor + '</b>' + roleTag +
+          (row['Remark'] ? '<div style="font-size:11px;color:var(--text2);margin-top:2px;">"' + row['Remark'] + '"</div>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    box.innerHTML = holdHTML + timelineHTML;
+  }catch(err){
+    box.innerHTML = '<div style="font-size:11px;color:var(--red);padding:8px 0;">Could not load history.</div>';
+  }
+}
+
 function showReqDetail(rStr){
   var r    = typeof rStr==='string' ? JSON.parse(rStr) : rStr;
   var date = r['SubmissionDate'] ? new Date(r['SubmissionDate']).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '-';
@@ -3555,10 +3623,12 @@ function showReqDetail(rStr){
   html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Submitted</div><div style="font-size:11px;font-weight:600;color:var(--navy);">' + date + '</div></div>';
   html += '</div></div>';
   html += mgrRmk + admRmk;
+  html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox1">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox1');
 }
 
 function loadManagerPanel(){
@@ -3843,10 +3913,12 @@ function mgrViewDetail(r){
   html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
   html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
   html += '</div>' + rmk;
+  html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox2">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox2');
 }
 
 function showAdminReqPanel(){
@@ -4313,10 +4385,12 @@ function admViewDetail(r){
   html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
   html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
   html += '</div>' + mrkMgr + mrkAdm;
+  html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox3">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox3');
 }
 
 function exportAdmRequisitions(){
