@@ -3526,6 +3526,39 @@ function buildTrackingHTML(r){
 // timeline. Server-side already scopes what each role is allowed to see
 // (Field only their own, Manager only their jurisdiction) — this just
 // displays whatever comes back.
+// ── COURIER DETAILS — the real answer to "when/how was this actually sent" ───
+// A requisition's own LastUpdated only tells you when the app's status flag
+// flipped to Completed — not the real dispatch date or who received it.
+// That real record lives in Sheet1 (SENT STATUS), keyed by vehicle code, so
+// look it up there and show the actual courier date + receiver.
+async function loadCourierDetails(vehicleCode, containerId){
+  var box = document.getElementById(containerId);
+  if(!box || !vehicleCode) return;
+  try{
+    var sheet1 = await fetchSheet1();
+    var match = null;
+    var codeUp = String(vehicleCode).toUpperCase();
+    if(Array.isArray(sheet1)){
+      for(var i=0; i<sheet1.length; i++){
+        if(String(sheet1[i]['Code']||'').toUpperCase() === codeUp){ match = sheet1[i]; break; }
+      }
+    }
+    if(!match || !match['Date of Courier']){
+      box.innerHTML = '<div style="font-size:11px;color:var(--text3);">No courier record found yet for this vehicle in Sent Status.</div>';
+      return;
+    }
+    var dateStr = String(match['Date of Courier']).substring(0,15);
+    box.innerHTML =
+      '<div style="background:var(--mint-bg);border:1px solid var(--mint-soft);border-radius:10px;padding:11px 13px;">' +
+        '<div style="font-size:12px;font-weight:800;color:#065F46;">📦 Sent on ' + dateStr + '</div>' +
+        (match['Receiver'] ? '<div style="font-size:11px;color:#065F46;margin-top:3px;">Received by: <b>' + match['Receiver'] + '</b></div>' : '') +
+        (match['Remark'] ? '<div style="font-size:11px;color:#065F46;margin-top:2px;">Note: "' + match['Remark'] + '"</div>' : '') +
+      '</div>';
+  }catch(err){
+    box.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load courier details.</div>';
+  }
+}
+
 async function loadReqHistory(reqId, containerId){
   var box = document.getElementById(containerId);
   if(!box) return;
@@ -3623,11 +3656,15 @@ function showReqDetail(rStr){
   html += '<div><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px;">Submitted</div><div style="font-size:11px;font-weight:600;color:var(--navy);">' + date + '</div></div>';
   html += '</div></div>';
   html += mgrRmk + admRmk;
+  if(r['Status'] === 'Completed'){
+    html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📦 Courier Details</div><div id="reqCourierBox1">Loading...</div></div>';
+  }
   html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox1">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['Status'] === 'Completed') loadCourierDetails(r['VehicleCode'], 'reqCourierBox1');
   if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox1');
 }
 
@@ -3913,11 +3950,15 @@ function mgrViewDetail(r){
   html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
   html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
   html += '</div>' + rmk;
+  if(r['Status'] === 'Completed'){
+    html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📦 Courier Details</div><div id="reqCourierBox2">Loading...</div></div>';
+  }
   html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox2">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['Status'] === 'Completed') loadCourierDetails(r['VehicleCode'], 'reqCourierBox2');
   if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox2');
 }
 
@@ -4385,11 +4426,15 @@ function admViewDetail(r){
   html += '<div class="req-detail-item"><div class="req-detail-label">Territory</div><div class="req-detail-value">' + (r['Territory']||'-') + '</div></div>';
   html += '<div class="req-detail-item"><div class="req-detail-label">Submitted</div><div class="req-detail-value" style="font-size:11px;">' + date + '</div></div>';
   html += '</div>' + mrkMgr + mrkAdm;
+  if(r['Status'] === 'Completed'){
+    html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📦 Courier Details</div><div id="reqCourierBox3">Loading...</div></div>';
+  }
   html += '<div style="margin-top:14px;"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;">📜 History</div><div id="reqHistBox3">Loading history...</div></div>';
   html += '</div>';
   html += '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>';
   html += '</div></div>';
   document.getElementById('modalArea').innerHTML = html;
+  if(r['Status'] === 'Completed') loadCourierDetails(r['VehicleCode'], 'reqCourierBox3');
   if(r['RequisitionId']) loadReqHistory(r['RequisitionId'], 'reqHistBox3');
 }
 
