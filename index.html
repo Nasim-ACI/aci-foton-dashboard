@@ -144,6 +144,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 #mgrHome.active{display:block;}
 #hqHome{display:none;min-height:100vh;background:var(--bg);}
 #hqHome.active{display:block;}
+#ffChoice,#dnpHome{display:none;min-height:100vh;background:var(--bg);}
+#ffChoice.active,#dnpHome.active{display:block;}
+.ff-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.ff-choice-card{background:var(--white);border:2px solid var(--border);border-radius:16px;padding:26px 20px;text-align:left;cursor:pointer;font-family:inherit;box-shadow:var(--shadow);transition:transform .15s,border-color .15s;}
+.ff-choice-card:hover,.ff-choice-card:active{border-color:var(--navy);transform:translateY(-2px);}
+.ff-choice-ico{font-size:34px;margin-bottom:10px;}
+.ff-choice-t{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:5px;}
+.ff-choice-s{font-size:12px;color:var(--text3);line-height:1.5;}
+.dnp-item{background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;}
+.dnp-item:hover,.dnp-item:active{border-color:var(--navy);background:var(--bg);}
+.dnp-item-code{font-size:14px;font-weight:800;color:var(--navy);}
+.dnp-item-reg{font-size:12px;color:var(--text3);margin-top:2px;}
+.dnp-msg{font-size:12px;color:var(--text3);padding:8px 2px;line-height:1.5;}
+@media(max-width:600px){.ff-choice-grid{grid-template-columns:1fr;}}
 #adminReqPanel{display:none;padding:20px;max-width:1200px;margin:0 auto;}
 #adminReqPanel.active{display:block;}
 .adm-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
@@ -725,6 +739,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
         <div class="pf-hero-btns">
           <button class="pf-hero-btn pf-hero-btn-p" onclick="goToDashboard()">📊 Open Full Dashboard</button>
           <button class="pf-hero-btn pf-hero-btn-s" onclick="loadPreface(true)">↻ Refresh Data</button>
+          <button class="pf-hero-btn pf-hero-btn-s" onclick="openDnpLookup('preface')">🔢 Number Plate &amp; Registration Card</button>
         </div>
         <div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,0.5);">Last sync: <span id="pfLastSync" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span> &nbsp;|&nbsp; Records: <span id="pfRec" style="color:rgba(255,255,255,0.8);font-weight:700;">—</span></div>
       </div>
@@ -817,6 +832,7 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     </div>
   </div>
   <div class="ff-body">
+    <div style="margin-bottom:12px;"><button class="tbtn" onclick="backToFFChoice()">← Menu</button></div>
     <div class="ff-welcome">
       <div class="ff-welcome-name" id="ffWelcomeName">Welcome</div>
       <div class="ff-welcome-meta">
@@ -842,6 +858,68 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
     </div>
     <div class="ff-section-title">My Requisitions</div>
     <div class="ff-req-list" id="ffReqList"><div class="ff-empty">Loading your requisitions...</div></div>
+  </div>
+</div>
+
+<!-- FIELD FORCE: CHOOSE WHAT TO DO -->
+<div id="ffChoice">
+  <div class="ff-topbar">
+    <div class="ff-brand">
+      <div class="ff-brand-logo ff-brand-logo-a">FOTON</div>
+      <div class="ff-brand-logo ff-brand-logo-b">ACI</div>
+    </div>
+    <div class="ff-user-info">
+      <div id="choiceAvatar" class="ff-avatar">F</div>
+      <div><div class="ff-uname" id="choiceUserName">—</div><div class="ff-urole" id="choiceUserRole">Field Force</div></div>
+      <button class="tbtn" style="margin-left:8px;" onclick="openChangePasswordModal()">🔑 Change Password</button>
+      <button class="tbtn" onclick="logout()">🔒 Logout</button>
+    </div>
+  </div>
+  <div class="ff-body">
+    <div class="ff-welcome">
+      <div class="ff-welcome-name" id="choiceWelcome">Hello</div>
+      <div class="ff-welcome-meta"><span>What would you like to do today?</span></div>
+    </div>
+    <div class="ff-choice-grid">
+      <button class="ff-choice-card" onclick="openOwnershipFromChoice()">
+        <div class="ff-choice-ico">📄</div>
+        <div class="ff-choice-t">Ownership Papers</div>
+        <div class="ff-choice-s">Submit a requisition and track the status of your ownership papers.</div>
+      </button>
+      <button class="ff-choice-card" onclick="openDnpLookup('ffChoice')">
+        <div class="ff-choice-ico">🔢</div>
+        <div class="ff-choice-t">Digital Number Plate &amp; Digital Registration Card</div>
+        <div class="ff-choice-s">Find out which BRTA office to visit for a vehicle's number plate and registration card.</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DIGITAL NUMBER PLATE & DIGITAL REGISTRATION CARD LOOKUP (Field Force, Admin, HQ) -->
+<div id="dnpHome">
+  <div class="ff-topbar">
+    <div class="ff-brand">
+      <div class="ff-brand-logo ff-brand-logo-a">FOTON</div>
+      <div class="ff-brand-logo ff-brand-logo-b">ACI</div>
+    </div>
+    <div class="ff-user-info">
+      <button class="tbtn" onclick="closeDnpLookup()">← Back</button>
+      <button class="tbtn" onclick="logout()">🔒 Logout</button>
+    </div>
+  </div>
+  <div class="ff-body">
+    <div class="ff-welcome">
+      <div class="ff-welcome-name">🔢 Number Plate &amp; Registration Card</div>
+      <div class="ff-welcome-meta"><span id="dnpScopeNote">Find which BRTA office to visit</span></div>
+    </div>
+    <div class="ff-search-box">
+      <div class="ff-section-title" style="margin-bottom:10px;">🔍 Search Vehicle</div>
+      <div class="ff-search-row">
+        <input class="ff-search-input" type="text" id="dnpSearchInput" placeholder="Enter vehicle code or registration no." inputmode="search" autocomplete="off" autocorrect="off" autocapitalize="characters" maxlength="30" onkeydown="if(event.key==='Enter')dnpSearch()"/>
+        <button class="ff-search-btn" id="dnpSearchBtn" onclick="dnpSearch()">Search</button>
+      </div>
+      <div class="ff-search-result" id="dnpSearchResult"></div>
+    </div>
   </div>
 </div>
 
@@ -911,6 +989,12 @@ button,.tbtn,.ff-req-item,.mgr-req-item,.role-tab,.pf-leg,.adm-filter-btn,.mgr-f
         <div id="hqSearchResults" style="display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:2px solid var(--border);border-radius:11px;box-shadow:var(--shadow2);z-index:100;max-height:280px;overflow-y:auto;"></div>
       </div>
     </div>
+
+    <button class="ff-choice-card" style="width:100%;display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:16px 18px;" onclick="openDnpLookup('hqHome')">
+      <div class="ff-choice-ico" style="margin:0;font-size:28px;">🔢</div>
+      <div><div class="ff-choice-t" style="margin:0 0 2px;">Digital Number Plate &amp; Digital Registration Card</div><div class="ff-choice-s">Check which BRTA office handles a vehicle</div></div>
+      <div style="margin-left:auto;font-size:18px;color:var(--text3);">→</div>
+    </button>
 
     <div class="pf-kpi-row" style="margin-bottom:16px;">
       <div class="pf-kpi c-blue"><div class="pf-kpi-icon">📋</div><div class="pf-kpi-val" id="hqKpiTotal">—</div><div class="pf-kpi-lbl">Total Records</div><div class="pf-kpi-sub">All entries</div></div>
@@ -1160,7 +1244,13 @@ var _e6=[46,59,32,63,61,126,110,124,59,37,61,61,63,58,106,38,60,39,33,35,49,97,4
 //  manager and admin passwords are validated server-side only, in Auth.gs)
 // Display-only name lookup for showing a friendly "Approved By" name in the
 // requisition tracking box. Not used for authentication in any way.
-var MGR_DISPLAY_NAMES = { '11111':'Gazi Niaz', '22222':'ASM Kamrul' };
+// Maps each manager's login username to their display name — used for the
+// "Approved by X" line and the activity History timeline. Keep this in sync
+// with the `managers` sheet's Username column, NOT the Name column — a
+// resigned manager's old username must stay mapped to their own name
+// forever, so past approvals/holds in history keep the correct attribution
+// even after someone new takes over the role with a different username.
+var MGR_DISPLAY_NAMES = { '12121':'Gazi Niaz', '23232':'ASM Kamrul', '46949':'Mohammad Ismail' };
 // ────────────────────────────────────────────────────────────────────────────
 const SHEET1_URL=_d(_e5);
 const SHEET2_URL=_d(_e6);
@@ -2854,7 +2944,7 @@ function authFetch(url, params, _retryCount){
         clearSession();
         showLoginErr('Session expired. Please login again.');
         document.getElementById('lockScreen').style.display='flex';
-        ['preface','dashboard','ffHome','mgrHome','adminReqPanel'].forEach(function(id){
+        ['preface','dashboard','ffHome','ffChoice','dnpHome','mgrHome','adminReqPanel'].forEach(function(id){
           var el=document.getElementById(id);
           if(el){el.classList.remove('active');el.style.display='';}
         });
@@ -2914,11 +3004,118 @@ function onLoginSuccess(session){
     document.getElementById('mgrHome').classList.add('active');
     loadManagerPanel();
   } else {
-    // Field force goes to restricted home
-    document.getElementById('ffHome').classList.add('active');
-    populateFFProfile(session);
-    loadFFRequisitions();
+    // Field force first chooses: Ownership Papers, or Number Plate / Registration Card
+    showFFChoice(session);
   }
+}
+
+// ── FIELD FORCE: CHOICE SCREEN ────────────────────────────────────────────────
+function showFFChoice(session){
+  const initials = (session.name||'F').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('choiceAvatar').textContent = initials;
+  document.getElementById('choiceUserName').textContent = session.name || session.staffId;
+  document.getElementById('choiceUserRole').textContent = session.designation || 'Field Force';
+  document.getElementById('choiceWelcome').textContent = 'Hello, ' + (session.name||'Officer');
+  document.getElementById('ffChoice').classList.add('active');
+  // Warm up the ownership screen in the background so it is ready when chosen.
+  populateFFProfile(session);
+  loadFFRequisitions();
+}
+function openOwnershipFromChoice(){
+  document.getElementById('ffChoice').classList.remove('active');
+  document.getElementById('ffHome').classList.add('active');
+  window.scrollTo(0,0);
+}
+function backToFFChoice(){
+  document.getElementById('ffHome').classList.remove('active');
+  document.getElementById('ffChoice').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── DIGITAL NUMBER PLATE & DIGITAL REGISTRATION CARD LOOKUP ───────────────────
+// The server does the searching and enforces the area limit; the browser only
+// ever receives the few vehicles that match what was typed.
+var _dnpBackTo = 'ffChoice';
+var _dnpResults = [];
+function dnpEsc_(x){
+  return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+}
+function openDnpLookup(fromId){
+  _dnpBackTo = fromId;
+  document.getElementById(fromId).classList.remove('active');
+  document.getElementById('dnpHome').classList.add('active');
+  document.getElementById('dnpScopeNote').textContent =
+    (SESSION && SESSION.role==='field') ? 'Showing vehicles in your own area only' : 'Showing vehicles in all areas';
+  document.getElementById('dnpSearchInput').value = '';
+  var out = document.getElementById('dnpSearchResult');
+  out.innerHTML = ''; out.style.display = 'none';
+  window.scrollTo(0,0);
+}
+function closeDnpLookup(){
+  document.getElementById('dnpHome').classList.remove('active');
+  document.getElementById(_dnpBackTo).classList.add('active');
+  window.scrollTo(0,0);
+}
+async function dnpSearch(){
+  var q = document.getElementById('dnpSearchInput').value.trim();
+  var out = document.getElementById('dnpSearchResult');
+  var btn = document.getElementById('dnpSearchBtn');
+  out.style.display = 'block';
+  if(q.replace(/[\s\-]/g,'').length < 4){
+    out.innerHTML = '<div class="dnp-msg">Please type at least 4 characters of the vehicle code or registration number.</div>';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Searching...';
+  out.innerHTML = '<div class="dnp-msg">Searching...</div>';
+  try{
+    var res = await authFetch(AUTH_URL, {action:'searchDnpDrc', q:q});
+    if(res && res.error){
+      out.innerHTML = '<div class="dnp-msg" style="color:var(--red);">' + dnpEsc_(res.error) + '</div>';
+      return;
+    }
+    var rows = (res && res.rows) || [];
+    _dnpResults = rows;
+    if(!rows.length){
+      out.innerHTML = '<div class="dnp-msg">No vehicle found' + ((SESSION&&SESSION.role==='field')?' in your area':'') + ' for “' + dnpEsc_(q) + '”.</div>';
+      return;
+    }
+    if(rows.length === 1){ out.innerHTML = ''; out.style.display = 'none'; showDnpPopup(0); return; }
+    out.innerHTML = rows.map(function(r,i){
+      var reg = (r.regNo && r.regNo.toUpperCase()!=='RESALE') ? r.regNo : (r.regNo ? 'Resale' : '—');
+      return '<div class="dnp-item" onclick="showDnpPopup('+i+')"><div class="dnp-item-code">'+dnpEsc_(r.code)+'</div><div class="dnp-item-reg">'+dnpEsc_(reg)+'</div></div>';
+    }).join('') + (res.more ? '<div class="dnp-msg">Showing the first '+rows.length+' matches — type more characters to narrow it down.</div>' : '');
+  }catch(err){
+    out.innerHTML = '<div class="dnp-msg" style="color:var(--red);">' + dnpEsc_(err && err.message ? err.message : 'Could not search. Please try again.') + '</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+function showDnpPopup(i){
+  var r = _dnpResults[i]; if(!r) return;
+  var unavailable = '<span style="color:var(--text3);font-weight:600;font-size:12px;">Not available — please ask the Registration Department</span>';
+  function office(v){
+    return v ? '<span style="display:inline-block;background:var(--mint-bg);color:#065F46;border:2px solid var(--mint-soft);padding:6px 16px;border-radius:99px;font-weight:800;font-size:14px;">'+dnpEsc_(v)+'</span>' : unavailable;
+  }
+  var reg = !r.regNo ? '—' : (r.regNo.toUpperCase()==='RESALE' ? 'Resale' : dnpEsc_(r.regNo));
+  document.getElementById('modalArea').innerHTML =
+    '<div class="ov" onclick="if(event.target.classList.contains(\'ov\'))closeModal()">' +
+    '<div class="rec-box">' +
+      '<div class="rec-head" style="background:linear-gradient(135deg,#0F766E,#0E7490);">' +
+        '<div class="rec-head-title">🔢 Number Plate &amp; Registration Card</div>' +
+        '<button class="rec-close" onclick="closeModal()">✕</button>' +
+      '</div>' +
+      '<div class="rec-body"><div class="rec-grid">' +
+        '<div class="rec-field"><div class="rec-label">Code</div><div class="rec-value">'+dnpEsc_(r.code)+'</div></div>' +
+        '<div class="rec-field"><div class="rec-label">Registration Month</div><div class="rec-value">'+(r.regMonth?dnpEsc_(r.regMonth):'—')+'</div></div>' +
+        '<div class="rec-field full"><div class="rec-label">Reg No</div><div class="rec-value">'+reg+'</div></div>' +
+        '<div class="rec-field full"><div class="rec-label">Digital Number Plate</div><div class="rec-value">'+office(r.plate)+'</div></div>' +
+        '<div class="rec-field full"><div class="rec-label">Digital Registration Card</div><div class="rec-value">'+office(r.card)+'</div></div>' +
+        '<div class="rec-field full"><div class="rec-label">Status</div>' +
+          '<div style="background:var(--blue-bg);border:1.5px solid var(--blue-soft);border-radius:10px;padding:10px 14px;font-size:12px;color:#1E40AF;font-weight:600;line-height:1.5;">'+dnpEsc_(r.status)+'</div>' +
+        '</div>' +
+      '</div></div>' +
+      '<div class="rec-foot"><button class="rec-btn rec-btn-close" onclick="closeModal()">Close</button></div>' +
+    '</div></div>';
 }
 
 // ── POPULATE FIELD FORCE PROFILE ──────────────────────────────────────────────
@@ -4474,7 +4671,7 @@ function logout(){
   if(!confirm('Are you sure you want to logout?')) return;
   clearSession();
   // Hide all screens
-  ['preface','dashboard','ffHome','mgrHome','hqHome'].forEach(id=>{
+  ['preface','dashboard','ffHome','ffChoice','dnpHome','mgrHome','hqHome'].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.classList.remove('active'); el.style.display=''; }
   });
